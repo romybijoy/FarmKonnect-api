@@ -2,12 +2,29 @@
 
 server:
   port: 4004 # Gateway listens on port 4004
+auth:
+  service:
+    url: http://auth-service:4051
 
 spring:
   main:
     web-application-type: reactive
   cloud:
     gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - http://localhost:4000
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
       routes:
         - id: auth-service-route
           uri: http://auth-service:4051
