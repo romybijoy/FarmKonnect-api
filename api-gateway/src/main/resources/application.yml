@@ -29,7 +29,7 @@ spring:
         - id: auth-service-route
           uri: http://auth-service:4051
           predicates:
-            - Path=/auth/**
+            - Path=/api/**
           filters:
             - StripPrefix=1
 
