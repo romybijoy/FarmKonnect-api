@@ -4,16 +4,16 @@ import com.fc.authservice.dto.UsersDTO;
 import com.fc.authservice.service.AuthService;
 import com.fc.authservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class AuthController {
+
+    @Autowired
+    private UserService usersManagementService;
 
     private final AuthService authService;
     private final UserService userService;
@@ -39,7 +39,7 @@ public class AuthController {
 //    }
 
 
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public ResponseEntity<UsersDTO> login(@RequestBody UsersDTO req){
         UsersDTO response = userService.login(req);
         if(response.getStatusCode() == 500){
@@ -48,11 +48,12 @@ public class AuthController {
         else if(response.getStatusCode() == 403){
             return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
         }
+
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Validate Token")
-    @GetMapping("/validate")
+    @GetMapping("/auth/validate")
     public ResponseEntity<Void> validateToken(
             @RequestHeader("Authorization") String authHeader) {
 
@@ -67,6 +68,42 @@ public class AuthController {
     }
 
 
+    @PutMapping("/auth/verify-account")
+    public ResponseEntity<UsersDTO> verifyAccount(@RequestParam String email,
+                                                  @RequestParam String otp) {
+        UsersDTO response = usersManagementService.verifyAccount(email, otp);
+        if(response.getStatusCode() == 500){
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    @PutMapping("/auth/regenerate-otp")
+    public ResponseEntity<UsersDTO> regenerateOtp(@RequestParam String email) {
+        return new ResponseEntity<>(usersManagementService.regenerateOtp(email), HttpStatus.OK);
+    }
+
+    @PutMapping("/auth/forgot-password")
+    public ResponseEntity<UsersDTO> forgotPassword(@RequestParam String email) {
+        UsersDTO response = usersManagementService.forgotPassword(email);
+        if(response.getStatusCode() == 500){
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+
+    @PutMapping("/auth/set-password")
+    public  ResponseEntity<UsersDTO> setPassword(@RequestParam String email, @RequestParam String newPassword){
+        UsersDTO response = usersManagementService.setPassword(email, newPassword);
+
+        if(response.getStatusCode() ==500){
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+        else if(response.getStatusCode() == 404){
+            return new ResponseEntity<>(response, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 
 
 }

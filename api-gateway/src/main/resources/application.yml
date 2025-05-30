@@ -5,7 +5,9 @@ server:
 auth:
   service:
     url: http://auth-service:4051
-
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
 spring:
   main:
     web-application-type: reactive
@@ -30,7 +32,7 @@ spring:
         - id: auth-service-route
           uri: http://auth-service:4051
           predicates:
-            - Path=/api/**
+            - Path=/user/**
           filters:
             - StripPrefix=1
 
@@ -40,8 +42,9 @@ spring:
           predicates:
             - Path=/api/post/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
             - JwtValidation
+
 
 #        # Route for /api/docs/patients to patient-service /v3/api-docs
 #        - id: api-docs-patient-route

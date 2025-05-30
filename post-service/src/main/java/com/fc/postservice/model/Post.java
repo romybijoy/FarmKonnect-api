@@ -22,13 +22,16 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    private String caption;
+    private String content;
 
-    @Column(nullable = false)
     private String image;
-    private String location;
+
+    private String userName;
+
+    private String district;
+    private String description;
     private LocalDateTime createdAt;
-    private Long userId;  // Storing only the user's ID
+    private String email;
     private List<Long> commentIds;
 
 

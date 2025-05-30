@@ -31,7 +31,7 @@ public class JwtValidationGatewayFilterFactory extends
             }
 
             return webClient.get()
-                    .uri("/validate")
+                    .uri("/auth/validate")
                     .header(HttpHeaders.AUTHORIZATION, token)
                     .retrieve()
                     .toBodilessEntity()

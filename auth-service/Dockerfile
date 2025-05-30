@@ -20,6 +20,7 @@ WORKDIR /app
 COPY --from=builder /app/target/auth-service-0.0.1-SNAPSHOT.jar /app.jar
 
 EXPOSE 4051
+EXPOSE 9091
 
 # Use exec form of ENTRYPOINT for better signal handling
 ENTRYPOINT ["java", "-jar", "/app.jar"]

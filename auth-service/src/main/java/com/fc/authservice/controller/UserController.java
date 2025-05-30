@@ -11,6 +11,8 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -31,19 +33,8 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/admin/login")
-    public ResponseEntity<UsersDTO> login(@RequestBody UsersDTO req){
-        UsersDTO response = usersManagementService.login(req);
-        if(response.getStatusCode() == 500){
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        else if(response.getStatusCode() == 403){
-            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
-        }
-        return ResponseEntity.ok(response);
-    }
 
-    @GetMapping("/admin/get-all-users")
+    @GetMapping("/get-all-users")
     public ResponseEntity<UsersResponse> getAllUsers(@RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
                                                      @RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
                                                      @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_USERS_BY, required = false) String sortBy,
@@ -56,7 +47,7 @@ public class UserController {
     }
 
 
-    @GetMapping("/admin/get-all-users/keyword/{keyword}")
+    @GetMapping("/get-all-users/keyword/{keyword}")
     public ResponseEntity<UsersResponse> getUsersByKeyword(@PathVariable String keyword,
                                                            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
                                                            @RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
@@ -70,7 +61,7 @@ public class UserController {
     }
 
 
-    @GetMapping("/admin/get-users/{userId}")
+    @GetMapping("/get-users/{userId}")
     public ResponseEntity<UsersDTO> getUserByID(@PathVariable UUID userId){
         UsersDTO response = usersManagementService.getUsersById(userId);
         System.out.println(response);
@@ -81,7 +72,7 @@ public class UserController {
 
     }
 
-    @GetMapping("/admin/get-users/find/{role}")
+    @GetMapping("/get-users/find/{role}")
     public ResponseEntity<UsersDTO> getUserByRole(@PathVariable Role role){
         UsersDTO response = usersManagementService.getUsersByRole(role);
         System.out.println(response);
@@ -92,7 +83,7 @@ public class UserController {
 
     }
 
-    @PutMapping("/admin/update/{userId}")
+    @PutMapping("/update/{userId}")
     public ResponseEntity<UsersDTO> updateUser(@PathVariable UUID userId, @RequestBody User reqres){
         UsersDTO response = usersManagementService.updateUser(userId, reqres);
         if(response.getStatusCode() == 500){
@@ -101,20 +92,20 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-//    @GetMapping("/adminuser/get-profile")
-//    public ResponseEntity<UsersDTO> getMyProfile(){
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        String email = authentication.getName();
-//        UsersDTO response = usersManagementService.getMyInfo(email);
-//        return  ResponseEntity.status(response.getStatusCode()).body(response);
-//    }
+    @GetMapping("/get-profile")
+    public ResponseEntity<UsersDTO> getMyProfile(){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        UsersDTO response = usersManagementService.getMyInfo(email);
+        return  ResponseEntity.status(response.getStatusCode()).body(response);
+    }
 
-    @DeleteMapping("/admin/delete/{userId}")
+    @DeleteMapping("/delete/{userId}")
     public ResponseEntity<UsersDTO> deleteUSer(@PathVariable UUID userId){
         return ResponseEntity.ok(usersManagementService.deleteUser(userId));
     }
 
-    @PutMapping("/admin/block/{userId}")
+    @PutMapping("/block/{userId}")
     public ResponseEntity<UsersDTO> blockUser(@PathVariable UUID userId, @RequestBody UsersDTO req){
         UsersDTO response = usersManagementService.blockUser(userId, req);
         if(response.getStatusCode() == 500){
@@ -123,40 +114,4 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/auth/verify-account")
-    public ResponseEntity<UsersDTO> verifyAccount(@RequestParam String email,
-                                                  @RequestParam String otp) {
-        UsersDTO response = usersManagementService.verifyAccount(email, otp);
-        if(response.getStatusCode() == 500){
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    @PutMapping("/auth/regenerate-otp")
-    public ResponseEntity<UsersDTO> regenerateOtp(@RequestParam String email) {
-        return new ResponseEntity<>(usersManagementService.regenerateOtp(email), HttpStatus.OK);
-    }
-
-    @PutMapping("/auth/forgot-password")
-    public ResponseEntity<UsersDTO> forgotPassword(@RequestParam String email) {
-        UsersDTO response = usersManagementService.forgotPassword(email);
-        if(response.getStatusCode() == 500){
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-
-    @PutMapping("/auth/set-password")
-    public  ResponseEntity<UsersDTO> setPassword(@RequestParam String email, @RequestParam String newPassword){
-        UsersDTO response = usersManagementService.setPassword(email, newPassword);
-
-        if(response.getStatusCode() ==500){
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        else if(response.getStatusCode() == 404){
-            return new ResponseEntity<>(response, HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
 }

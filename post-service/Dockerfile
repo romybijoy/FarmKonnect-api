@@ -4,11 +4,12 @@ FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
 # Copy only necessary files first to optimize caching
-COPY pom.xml .  
+COPY pom.xml .
+
 RUN mvn dependency:go-offline -B  # Pre-download dependencies for faster builds
 
 # Copy the source code AFTER downloading dependencies
-COPY src ./src  
+COPY src ./src
 RUN mvn clean package -DskipTests  # Skip tests for faster builds (optional)
 
 # Stage 2: Use a lightweight JRE for production
@@ -23,3 +24,25 @@ EXPOSE 4050
 
 # Use exec form for better signal handling
 ENTRYPOINT ["java", "-jar", "/app.jar"]
+
+#FROM maven:3.9.9-eclipse-temurin-21 AS builder
+#
+#WORKDIR /app
+#
+#COPY pom.xml .
+#
+#RUN mvn dependency:go-offline -B
+#
+#COPY src ./src
+#
+#RUN mvn clean package
+#
+#FROM openjdk:21-jdk AS runner
+#
+#WORKDIR /app
+#
+#COPY --from=builder ./app/target/post-service-0.0.1-SNAPSHOT.jar ./app.jar
+#
+#EXPOSE 4050
+#
+#ENTRYPOINT ["java", "-jar", "app.jar"]

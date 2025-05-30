@@ -39,6 +39,8 @@ public class User {
 
     private String image;
 
+    private String description;
+
     private String district;
 
     private String block_reason;
