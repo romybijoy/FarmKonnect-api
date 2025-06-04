@@ -20,7 +20,8 @@ public class UserDTO {
     private Role role;
     private String image;
     private String block_reason;
-    private Double walletBalance;
+    private String description;
+    private String district;
     private boolean enabled;
 
 }

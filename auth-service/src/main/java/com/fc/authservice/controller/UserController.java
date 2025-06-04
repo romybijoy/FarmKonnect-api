@@ -32,9 +32,6 @@ public class UserController {
     public ResponseEntity<UsersDTO> register(@Valid @RequestBody UsersRequest reg){
         UsersDTO response = usersManagementService.register(reg);
 
-//        if(response.getStatusCode() == 500){
-//            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-//        }
         return ResponseEntity.ok(response);
     }
 

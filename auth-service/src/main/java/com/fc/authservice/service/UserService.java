@@ -5,8 +5,7 @@ import com.fc.authservice.dto.UsersDTO;
 import com.fc.authservice.dto.UsersRequest;
 import com.fc.authservice.dto.UsersResponse;
 import com.fc.authservice.enums.Role;
-import com.fc.authservice.exception.APIException;
-import com.fc.authservice.exception.UserException;
+import com.fc.authservice.exception.*;
 import com.fc.authservice.model.User;
 import com.fc.authservice.repository.UserRepository;
 import com.fc.authservice.util.EmailUtil;
@@ -20,7 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -44,9 +43,6 @@ public class UserService {
 
 
     private final AuthService authService;
-//
-//    @Autowired
-//    private AuthenticationManager authenticationManager;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -66,9 +62,18 @@ public class UserService {
 
     public UsersDTO login(UsersDTO loginRequest){
         UsersDTO response = new UsersDTO();
-        var user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
+        var user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new UserNotFoundException("User not found"));
         response.setBlock_reason(user.getBlock_reason());
-        try {
+            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                throw new PasswordMismatchException("Incorrect password");
+            }
+            if (loginRequest.getEmail() == null || loginRequest.getPassword() == null) {
+                throw new BadRequestException("Username or password must not be null");
+            }
+
+            if (!user.isEnabled()) {
+                throw new ForbiddenException("User account is disabled");
+            }
 
 //            authenticationManager
 //                    .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),
@@ -79,53 +84,21 @@ public class UserService {
             String token;
             token = tokenOptional.orElse(null);
 
+            if (tokenOptional.isEmpty()) {
+                response.setToken(token);
+            return response;
+        }
             response.setStatusCode(200);
             response.setToken(token);
             response.setRole(user.getRole());
             response.setName(user.getUserName());
             response.setEmail(user.getEmail());
-//            response.setRefreshToken(refreshToken);
+            response.setEnabled(user.isEnabled());
             response.setExpirationTime("24Hrs");
             response.setMessage("Successfully Logged In");
 
-        }catch (DisabledException e) {
-
-            response.setMessage("User is disabled due to "+ user.getBlock_reason());
-            response.setStatusCode(403);
-        }
-        catch (Exception e){
-            response.setStatusCode(500);
-            response.setMessage(e.getMessage());
-        }
         return response;
     }
-
-
-
-
-
-//    public UsersDTO refreshToken(UsersDTO refreshTokenRequest){
-//        UsersDTO response = new UsersDTO();
-//        try{
-//            String ourEmail = jwtUtils.extractUsername(refreshTokenRequest.getToken());
-//            OurUsers users = usersRepo.findByEmail(ourEmail).orElseThrow();
-//            if (jwtUtils.isTokenValid(refreshTokenRequest.getToken(), users)) {
-//                var jwt = jwtUtils.generateToken(users);
-//                response.setStatusCode(200);
-//                response.setToken(jwt);
-//                response.setRefreshToken(refreshTokenRequest.getToken());
-//                response.setExpirationTime("24Hr");
-//                response.setMessage("Successfully Refreshed Token");
-//            }
-//            response.setStatusCode(200);
-//            return response;
-//
-//        }catch (Exception e){
-//            response.setStatusCode(500);
-//            response.setMessage(e.getMessage());
-//            return response;
-//        }
-//    }
 
 
 
@@ -146,17 +119,16 @@ public class UserService {
             throw new APIException("User with the email '" + registrationRequest.getEmail() + "' already exists !!!", 409);
         }
         String otp = otpUtil.generateOtp();
-        if(registrationRequest.getRole() == Role.USER){
+        if (registrationRequest.getRole() == Role.USER && !registrationRequest.getEmail().isBlank()) {
+            try {
+                emailUtil.sendOtpEmail(registrationRequest.getEmail(), otp);
+            } catch (MessagingException e) {
+                // Wrap the internal error with a meaningful API-level message
+                throw new APIException("Unable to send OTP. Please try again later.", 500);
+            }
+        }
 
-            if(!Objects.equals(registrationRequest.getEmail(), "")) {
-
-                try {
-                    emailUtil.sendOtpEmail(registrationRequest.getEmail(), otp);
-                } catch (MessagingException e) {
-                    throw new RuntimeException("Unable to send otp please try again");
-                }
-            }}
-        try {
+        // Create new user entity
             User ourUser = new User();
             ourUser.setEmail(registrationRequest.getEmail());
             ourUser.setRole(registrationRequest.getRole());
@@ -165,22 +137,23 @@ public class UserService {
             ourUser.setMobile_number(registrationRequest.getMobile_number());
             ourUser.setOtp(otp);
             ourUser.setOtpGeneratedTime(LocalDateTime.now());
+            ourUser.setCreatedAt(LocalDateTime.now());
+            ourUser.setDescription(registrationRequest.getDescription());
+            ourUser.setDistrict(registrationRequest.getDistrict());
             ourUser.setEnabled(true);
             ourUser.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
-            User userResult = userRepository.save(ourUser);
+            User savedUser = userRepository.save(ourUser);
 
-            if (userResult.getId() != null) {
+            if (savedUser.getId() != null) {
 
-                UserDTO user = modelMapper.map(userResult, UserDTO.class);
+                UserDTO user = modelMapper.map(savedUser, UserDTO.class);
                 resp.setOurUsers(user);
                 resp.setMessage("User Saved Successfully");
                 resp.setStatusCode(200);
+            }else {
+                throw new APIException("Something went wrong while saving the user.", 500);
             }
 
-        }catch (Exception e){
-            resp.setStatusCode(500);
-            resp.setError(e.getMessage());
-        }
         return resp;
     }
 
@@ -454,5 +427,9 @@ public class UserService {
             resp.setError(e.getMessage());
         }
         return resp;
+    }
+
+    public User getUserByUsername(String username) {
+        return userRepository.findByUserName((username).describeConstable().orElseThrow(() -> new UsernameNotFoundException("User not found")));
     }
 }

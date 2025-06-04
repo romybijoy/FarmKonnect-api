@@ -19,6 +19,8 @@ public class UsersRequest {
     private String email;
     private String mobile_number;
     private String password;
+    private String description;
+    private String district;
     private Role role;
     private String image;
     private String block_reason;

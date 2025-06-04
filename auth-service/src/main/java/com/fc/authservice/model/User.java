@@ -27,7 +27,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(name = "user_name", nullable = false)
     private String userName;
 
     @Size(min = 10, max = 10, message = "Mobile Number must be exactly 10 digits long")
