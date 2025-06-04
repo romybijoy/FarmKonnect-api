@@ -4,12 +4,14 @@ import com.fc.authservice.dto.UsersDTO;
 import com.fc.authservice.service.AuthService;
 import com.fc.authservice.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Tag(name = "Users", description = "API for managing users")
 public class AuthController {
 
     @Autowired
@@ -40,20 +42,25 @@ public class AuthController {
 
 
     @PostMapping("/auth/login")
+    @Operation(summary = "Generate token on user login")
     public ResponseEntity<UsersDTO> login(@RequestBody UsersDTO req){
         UsersDTO response = userService.login(req);
-        if(response.getStatusCode() == 500){
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        else if(response.getStatusCode() == 403){
-            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
-        }
+//        if(response.getToken() == null){
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+
+//        if(response.getStatusCode() == 500){
+//            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+//        }
+//        else if(response.getStatusCode() == 403){
+//            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+//        }
 
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Validate Token")
-    @GetMapping("/auth/validate")
+
+    @GetMapping("/auth/validate")   @Operation(summary = "Validate Token")
     public ResponseEntity<Void> validateToken(
             @RequestHeader("Authorization") String authHeader) {
 
@@ -67,7 +74,7 @@ public class AuthController {
                 : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
-
+    @Operation(summary = "Verify account")
     @PutMapping("/auth/verify-account")
     public ResponseEntity<UsersDTO> verifyAccount(@RequestParam String email,
                                                   @RequestParam String otp) {
@@ -77,11 +84,14 @@ public class AuthController {
         }
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @Operation(summary = "Generate OTP")
     @PutMapping("/auth/regenerate-otp")
     public ResponseEntity<UsersDTO> regenerateOtp(@RequestParam String email) {
         return new ResponseEntity<>(usersManagementService.regenerateOtp(email), HttpStatus.OK);
     }
 
+    @Operation(summary = "Forgot password")
     @PutMapping("/auth/forgot-password")
     public ResponseEntity<UsersDTO> forgotPassword(@RequestParam String email) {
         UsersDTO response = usersManagementService.forgotPassword(email);
@@ -91,7 +101,7 @@ public class AuthController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-
+    @Operation(summary = "Set password")
     @PutMapping("/auth/set-password")
     public  ResponseEntity<UsersDTO> setPassword(@RequestParam String email, @RequestParam String newPassword){
         UsersDTO response = usersManagementService.setPassword(email, newPassword);
