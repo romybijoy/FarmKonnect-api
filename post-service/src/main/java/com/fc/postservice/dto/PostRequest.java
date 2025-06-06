@@ -9,6 +9,8 @@ import lombok.Setter;
 public class PostRequest {
     private String email;
     private String content;
+    private String postImage;
+
 
 }
 
