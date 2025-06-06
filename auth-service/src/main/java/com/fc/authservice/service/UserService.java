@@ -1,9 +1,6 @@
 package com.fc.authservice.service;
 
-import com.fc.authservice.dto.UserDTO;
-import com.fc.authservice.dto.UsersDTO;
-import com.fc.authservice.dto.UsersRequest;
-import com.fc.authservice.dto.UsersResponse;
+import com.fc.authservice.dto.*;
 import com.fc.authservice.enums.Role;
 import com.fc.authservice.exception.*;
 import com.fc.authservice.model.User;
@@ -312,28 +309,37 @@ public class UserService {
     }
 
 
-    public UsersDTO getMyInfo(String email){
-        UsersDTO usersDTO = new UsersDTO();
-        try {
-            Optional<User> userOptional = userRepository.findByEmail(email);
-            if (userOptional.isPresent()) {
+//    public UsersDTO getMyInfo(String email){
+//        UsersDTO usersDTO = new UsersDTO();
+//        try {
+//            Optional<User> userOptional = userRepository.findByEmail(email);
+//            if (userOptional.isPresent()) {
+//
+//                UserDTO user = modelMapper.map(userOptional.get(), UserDTO.class);
+//                usersDTO.setOurUsers(user);
+//                usersDTO.setStatusCode(200);
+//                usersDTO.setMessage("successful");
+//            } else {
+//                usersDTO.setStatusCode(404);
+//                usersDTO.setMessage("User not found");
+//            }
+//
+//        }catch (Exception e){
+//            usersDTO.setStatusCode(500);
+//            usersDTO.setMessage("Error occurred while getting user info: " + e.getMessage());
+//        }
+//        return usersDTO;
+//
+//    }
 
-                UserDTO user = modelMapper.map(userOptional.get(), UserDTO.class);
-                usersDTO.setOurUsers(user);
-                usersDTO.setStatusCode(200);
-                usersDTO.setMessage("successful");
-            } else {
-                usersDTO.setStatusCode(404);
-                usersDTO.setMessage("User not found");
-            }
+    public UserDTO getMyInfo(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
 
-        }catch (Exception e){
-            usersDTO.setStatusCode(500);
-            usersDTO.setMessage("Error occurred while getting user info: " + e.getMessage());
-        }
-        return usersDTO;
-
+        return modelMapper.map(user, UserDTO.class);
     }
+
+
 
     public UsersDTO blockUser(UUID userId, UsersDTO req) {
         UsersDTO usersDTO = new UsersDTO();
@@ -432,4 +438,15 @@ public class UserService {
     public User getUserByUsername(String username) {
         return userRepository.findByUserName((username).describeConstable().orElseThrow(() -> new UsernameNotFoundException("User not found")));
     }
+
+    public BlockStatusResponse checkBlockStatus(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new APIException("User not found", 404));
+
+        boolean active = user.isEnabled();
+        String message = active ? "User is active" : "User is blocked";
+
+        return new BlockStatusResponse(active, message);
+    }
+
 }

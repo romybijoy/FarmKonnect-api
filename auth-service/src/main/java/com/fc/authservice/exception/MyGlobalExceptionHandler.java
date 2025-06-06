@@ -1,9 +1,11 @@
 package com.fc.authservice.exception;
 import java.time.LocalDateTime;
 
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -57,7 +59,7 @@ public class MyGlobalExceptionHandler {
 
         String res = e.getMessage();
 
-        return new ResponseEntity<String>(res, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(UserException.class)
@@ -72,5 +74,26 @@ public class MyGlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAll(Exception ex) {
         return new ResponseEntity<>(new ErrorResponse(500, "Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+//    @ExceptionHandler(MethodArgumentNotValidException.class)
+//    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
+//        Map<String, String> errors = new HashMap<>();
+//        ex.getBindingResult().getFieldErrors().forEach(error ->
+//                errors.put(error.getField(), error.getDefaultMessage()));
+//        return ResponseEntity.badRequest().body(errors);
+//    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .orElse("Validation error");
+
+        ErrorResponse res = new ErrorResponse(400, errorMessage, LocalDateTime.now());
+        return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
     }
 }

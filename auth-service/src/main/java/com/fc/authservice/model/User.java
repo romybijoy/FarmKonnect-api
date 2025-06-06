@@ -1,10 +1,9 @@
 package com.fc.authservice.model;
 
 
+import com.fc.authservice.annotation.ValidPassword;
 import com.fc.authservice.enums.Role;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,13 +24,12 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    @ValidPassword
     private String password;
 
     @Column(name = "user_name", nullable = false)
     private String userName;
 
-    @Size(min = 10, max = 10, message = "Mobile Number must be exactly 10 digits long")
-    @Pattern(regexp = "^\\d{10}$", message = "Mobile Number must contain only Numbers")
     private String mobile_number;
 
     @Enumerated(EnumType.STRING)

@@ -1,9 +1,7 @@
 package com.fc.authservice.controller;
 
 import com.fc.authservice.config.AppConstants;
-import com.fc.authservice.dto.UsersDTO;
-import com.fc.authservice.dto.UsersRequest;
-import com.fc.authservice.dto.UsersResponse;
+import com.fc.authservice.dto.*;
 import com.fc.authservice.enums.Role;
 import com.fc.authservice.model.User;
 import com.fc.authservice.service.UserService;
@@ -13,11 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -62,7 +56,7 @@ public class UserController {
         return new ResponseEntity<>(usersResponse, HttpStatus.FOUND);
     }
 
-    @Operation(summary = "Get uer by ID")
+    @Operation(summary = "Get user by ID")
     @GetMapping("/get-users/{userId}")
     public ResponseEntity<UsersDTO> getUserByID(@PathVariable UUID userId){
         UsersDTO response = usersManagementService.getUsersById(userId);
@@ -97,12 +91,12 @@ public class UserController {
     }
 
     @Operation(summary = "Get logged in user details")
-    @GetMapping("/get-profile")
-    public ResponseEntity<UsersDTO> getMyProfile(){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        UsersDTO response = usersManagementService.getMyInfo(email);
-        return  ResponseEntity.status(response.getStatusCode()).body(response);
+    @GetMapping("/get-profile/{email}")
+    public ResponseEntity<UserDTO> getMyProfile(@PathVariable String email){
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        String email = authentication.getName();
+        UserDTO userDTO = usersManagementService.getMyInfo(email);
+        return ResponseEntity.ok(userDTO); // returns HTTP 200
     }
 
     @Operation(summary = "Delete user")
@@ -121,10 +115,12 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/auth/check-status")
-    public ResponseEntity<?> checkUserStatus(Authentication auth) {
-        User user = usersManagementService.getUserByUsername(auth.getName());
-        return ResponseEntity.ok(Map.of("blocked", user.isEnabled()));
+    @Operation(summary = "Get Block status")
+    @GetMapping("/auth/{email}/block-status")
+    public ResponseEntity<BlockStatusResponse> getBlockStatus(@PathVariable String email) {
+        BlockStatusResponse response = usersManagementService.checkBlockStatus(email);
+        return ResponseEntity.ok(response);
     }
+
 
 }
