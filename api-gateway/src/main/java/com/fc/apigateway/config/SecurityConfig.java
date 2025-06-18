@@ -14,7 +14,9 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         http
-                .authorizeExchange(exchange -> exchange.anyExchange().permitAll())
+                .authorizeExchange(exchange -> exchange
+                        .pathMatchers("/api/chat/chat-ws/**").permitAll()
+                        .anyExchange().permitAll())
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(Customizer.withDefaults());
 
