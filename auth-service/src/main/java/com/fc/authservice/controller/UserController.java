@@ -80,14 +80,21 @@ public class UserController {
 
     }
 
+//    @Operation(summary = "Update user details")
+//    @PutMapping("/update/{userId}")
+//    public ResponseEntity<UsersDTO> updateUser(@PathVariable UUID userId, @RequestBody User reqres){
+//        UsersDTO response = usersManagementService.updateUser(userId, reqres);
+//        if(response.getStatusCode() == 500){
+//            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+//        }
+//        return ResponseEntity.ok(response);
+//    }
+
     @Operation(summary = "Update user details")
     @PutMapping("/update/{userId}")
-    public ResponseEntity<UsersDTO> updateUser(@PathVariable UUID userId, @RequestBody User reqres){
-        UsersDTO response = usersManagementService.updateUser(userId, reqres);
-        if(response.getStatusCode() == 500){
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(response);
+    public ResponseEntity<UsersDTO> updateUser(@PathVariable UUID userId, @RequestBody User reqres) {
+        UsersDTO updatedUser = usersManagementService.updateUser(userId, reqres);
+        return ResponseEntity.ok(updatedUser);
     }
 
     @Operation(summary = "Get logged in user details")

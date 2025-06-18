@@ -274,38 +274,57 @@ public class UserService {
         return usersDTO;
     }
 
+//    public UsersDTO updateUser(UUID userId, User updatedUser) {
+//        UsersDTO usersDTO = new UsersDTO();
+//        try {
+//            Optional<User> userOptional = userRepository.findById(userId);
+//            if (userOptional.isPresent()) {
+//                User existingUser = userOptional.get();
+//                existingUser.setEmail(updatedUser.getEmail());
+//                existingUser.setUserName(updatedUser.getUserName());
+//                existingUser.setMobile_number(updatedUser.getMobile_number());
+//                existingUser.setRole(updatedUser.getRole());
+//                existingUser.setImage(updatedUser.getImage());
+//
+//                // Check if password is present in the request
+//                if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+//                    // Encode the password and update it
+//                    existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+//                }
+//
+//                User savedUser = userRepository.save(existingUser);
+//                UserDTO user = modelMapper.map(savedUser, UserDTO.class);
+//                usersDTO.setOurUsers(user);
+//                usersDTO.setStatusCode(200);
+//                usersDTO.setMessage("User updated successfully");
+//            } else {
+//                usersDTO.setStatusCode(404);
+//                usersDTO.setMessage("User not found for update");
+//            }
+//        } catch (Exception e) {
+//            usersDTO.setStatusCode(500);
+//            usersDTO.setMessage("Error occurred while updating user: " + e.getMessage());
+//        }
+//        return usersDTO;
+//    }
+
     public UsersDTO updateUser(UUID userId, User updatedUser) {
-        UsersDTO usersDTO = new UsersDTO();
-        try {
-            Optional<User> userOptional = userRepository.findById(userId);
-            if (userOptional.isPresent()) {
-                User existingUser = userOptional.get();
-                existingUser.setEmail(updatedUser.getEmail());
-                existingUser.setUserName(updatedUser.getUserName());
-                existingUser.setMobile_number(updatedUser.getMobile_number());
-                existingUser.setRole(updatedUser.getRole());
-                existingUser.setImage(updatedUser.getImage());
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
-                // Check if password is present in the request
-                if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-                    // Encode the password and update it
-                    existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
-                }
+        existingUser.setEmail(updatedUser.getEmail());
+        existingUser.setUserName(updatedUser.getUserName());
+        existingUser.setMobile_number(updatedUser.getMobile_number());
+        existingUser.setImage(updatedUser.getImage());
+        existingUser.setDescription(updatedUser.getDescription());
+        existingUser.setDistrict(updatedUser.getDistrict());
 
-                User savedUser = userRepository.save(existingUser);
-                UserDTO user = modelMapper.map(savedUser, UserDTO.class);
-                usersDTO.setOurUsers(user);
-                usersDTO.setStatusCode(200);
-                usersDTO.setMessage("User updated successfully");
-            } else {
-                usersDTO.setStatusCode(404);
-                usersDTO.setMessage("User not found for update");
-            }
-        } catch (Exception e) {
-            usersDTO.setStatusCode(500);
-            usersDTO.setMessage("Error occurred while updating user: " + e.getMessage());
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
-        return usersDTO;
+
+        User savedUser = userRepository.save(existingUser);
+        return modelMapper.map(savedUser, UsersDTO.class);
     }
 
 
@@ -335,6 +354,8 @@ public class UserService {
     public UserDTO getMyInfo(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+
+        System.out.println("User description: " + user.getDescription());
 
         return modelMapper.map(user, UserDTO.class);
     }
