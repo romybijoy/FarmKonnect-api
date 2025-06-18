@@ -25,6 +25,11 @@ public class JwtValidationGatewayFilterFactory extends
             String token =
                     exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
+            String path = exchange.getRequest().getURI().getPath();
+            if (path.startsWith("/chat-ws")) {
+                return chain.filter(exchange); // skip JWT validation
+            }
+
             if(token == null || !token.startsWith("Bearer ")) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 return exchange.getResponse().setComplete();
