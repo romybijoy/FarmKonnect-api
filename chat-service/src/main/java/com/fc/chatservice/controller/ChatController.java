@@ -28,10 +28,15 @@ public class ChatController {
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload ChatMessage message) {
         ChatMessage saved = chatService.saveMessage(message);
+
         if (saved.getGroupId() != null) {
             messagingTemplate.convertAndSend("/topic/group/" + saved.getGroupId(), saved);
         } else {
-            messagingTemplate.convertAndSend("/topic/user/" + saved.getReceiverId(), saved);
+            // Send to receiver
+            messagingTemplate.convertAndSend("/topic/private/" + saved.getReceiverId(), saved);
+
+            // Also send to sender (so that sender sees their own message as realtime confirmation)
+            messagingTemplate.convertAndSend("/topic/private/" + saved.getSenderId(), saved);
         }
     }
 
@@ -43,7 +48,7 @@ public class ChatController {
         if (saved.getGroupId() != null) {
             messagingTemplate.convertAndSend("/topic/group/" + saved.getGroupId(), saved);
         } else {
-            messagingTemplate.convertAndSend("/topic/user/" + saved.getReceiverId(), saved);
+            messagingTemplate.convertAndSend("/topic/private/" + saved.getReceiverId(), saved);
         }
 
         return ResponseEntity.ok(saved);
