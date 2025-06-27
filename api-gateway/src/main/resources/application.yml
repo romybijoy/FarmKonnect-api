@@ -1,14 +1,6 @@
-#// spring.application.name=api-gateway
-
-server:
-  port: 4004 # Gateway listens on port 4004
-auth:
-  service:
-    url: http://auth-service:4051
-logging:
-  level:
-    org.springframework.cloud.gateway: DEBUG
 spring:
+  application:
+    name: api-gateway
   main:
     web-application-type: reactive
   cloud:
@@ -36,7 +28,6 @@ spring:
           filters:
             - StripPrefix=1
 
-        # Route for /api/post/** to post-service
         - id: post-service-route
           uri: http://post-service:4050
           predicates:
@@ -44,9 +35,27 @@ spring:
           filters:
             - StripPrefix=2
             - JwtValidation
+          # Route for /api/story/** to stories-service
+        - id: story-service-route
+          uri: http://stories-service:4053
+          predicates:
+            - Path=/api/stories/**
+          filters:
+                - StripPrefix=2
+                - JwtValidation
 
+        - id: chat-service-route
+          uri: http://chat-service:4052
+          predicates:
+            - Path=/api/chat/**
+          filters:
+            - StripPrefix=2
+            - JwtValidation
+            - RewritePath=/api/chat/(?<segment>.*), /$\{segment}
+#            - name: JwtValidation
+#              args:
+#                - excludedPaths: /chat-ws/**
 
-        # Route for /api/docs/users to auth-service /v3/api-docs
         - id: api-docs-users-route
           uri: http://auth-service:4051
           predicates:
@@ -60,3 +69,23 @@ spring:
             - Path=/api-docs/post
           filters:
             - RewritePath=/api-docs/post,/v3/api-docs
+
+#eureka:
+#  client:
+#    register-with-eureka: true
+#    fetch-registry: true
+#    service-url:
+#      defaultZone: http://eureka-server:8761/eureka
+#  instance:
+#    prefer-ip-address: true
+
+server:
+  port: 4004
+
+auth:
+  service:
+    url: http://auth-service:4051
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG

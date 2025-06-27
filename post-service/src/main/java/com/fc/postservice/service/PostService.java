@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-
 public class PostService {
     @GrpcClient("auth-service")
     private UserServiceGrpc.UserServiceBlockingStub userStub;
