@@ -1,0 +1,195 @@
+services:
+  api-gateway:
+    image: api-gateway
+    container_name: api-gateway
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "4004:4004"
+    networks:
+      - internal
+    depends_on:
+      - auth-service
+      - post-service
+      - chat-service
+      - stories-service
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------- AUTH SERVICE ----------
+  auth-service-db:
+    image: mysql:8
+    container_name: auth-service-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: auth_srvc_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3309:3306"
+    networks:
+      - internal
+    volumes:
+      - ./auth-mysql:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    image: auth-service:latest
+    container_name: auth-service
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "4051:4051"
+      - "9091:9091"
+    depends_on:
+      auth-service-db:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------- POST SERVICE ----------
+  post-service-db:
+    image: mysql:8
+    container_name: post-service-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: post_srvc_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./post-mysql:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  post-service:
+    image: post-service:latest
+    container_name: post-service
+    build:
+      context: ./post-service
+      dockerfile: Dockerfile
+    ports:
+      - "4050:4050"
+    depends_on:
+      post-service-db:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------- STORIES SERVICE ----------
+
+  stories-service-db:
+    image: mysql:8
+    container_name: stories-service-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: stories_srvc_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "5003:5432"
+    volumes:
+      - ./stories-mysql:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  stories-service:
+    image: stories-service:latest
+    container_name: stories-service
+    build:
+      context: ./stories_service
+      dockerfile: Dockerfile
+    ports:
+      - "4053:4053"
+    depends_on:
+      stories-service-db:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------- CHAT SERVICE ----------
+  chat-service-db:
+    image: mysql:8
+    container_name: chat-service-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: chat_srvc_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "5002:5434"
+    volumes:
+      - ./chat-mysql:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  chat-service:
+    image: chat-service:latest
+    container_name: chat-service
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    ports:
+      - "4052:4052"
+    depends_on:
+      chat-service-db:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  internal:
+    driver: bridge
