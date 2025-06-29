@@ -10,12 +10,12 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name= "group")
+@Table(name= "group_chat")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Group {
+public class GroupChat {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
