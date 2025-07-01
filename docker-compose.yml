@@ -17,8 +17,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
 
   # ---------- AUTH SERVICE ----------
   auth-service-db:
@@ -60,8 +60,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
 
   # ---------- POST SERVICE ----------
   post-service-db:
@@ -102,8 +102,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
 
   # ---------- STORIES SERVICE ----------
 
@@ -117,7 +117,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "5003:5432"
+      - "5003:3306"
     volumes:
       - ./stories-mysql:/var/lib/mysql
     healthcheck:
@@ -145,8 +145,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
 
   # ---------- CHAT SERVICE ----------
   chat-service-db:
@@ -159,7 +159,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "5002:5434"
+      - "5002:3306"
     volumes:
       - ./chat-mysql:/var/lib/mysql
     healthcheck:
@@ -187,8 +187,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '0.25'
+          memory: 256M
 
 networks:
   internal:
