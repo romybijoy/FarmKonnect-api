@@ -22,14 +22,16 @@ spring:
             allowCredentials: true
       routes:
         - id: auth-service-route
-          uri: http://auth-service:4051
+#          uri: http://auth-service:4051
+          uri: http://localhost:4051
           predicates:
             - Path=/user/**
           filters:
             - StripPrefix=1
 
         - id: post-service-route
-          uri: http://post-service:4050
+#          uri: http://post-service:4050
+          uri: http://localhost:4050
           predicates:
             - Path=/api/post/**
           filters:
@@ -37,7 +39,8 @@ spring:
             - JwtValidation
           # Route for /api/story/** to stories-service
         - id: story-service-route
-          uri: http://stories-service:4053
+#          uri: http://stories-service:4053
+          uri: http://localhost:4053
           predicates:
             - Path=/api/stories/**
           filters:
@@ -45,7 +48,8 @@ spring:
                 - JwtValidation
 
         - id: chat-service-route
-          uri: http://chat-service:4052
+#          uri: http://chat-service:4052
+          uri: http://localhost:4052
           predicates:
             - Path=/api/chat/**
           filters:
@@ -57,14 +61,16 @@ spring:
 #                - excludedPaths: /chat-ws/**
 
         - id: api-docs-users-route
-          uri: http://auth-service:4051
+#          uri: http://auth-service:4051
+          uri: http://localhost:4051
           predicates:
             - Path=/api-docs/users
           filters:
             - RewritePath=/api-docs/users,/v3/api-docs
 
         - id: api-docs-post-route
-          uri: http://post-service:4050
+#          uri: http://post-service:4050
+          uri: http://localhost:4050
           predicates:
             - Path=/api-docs/post
           filters:
@@ -84,7 +90,8 @@ server:
 
 auth:
   service:
-    url: http://auth-service:4051
+#    url: http://auth-service:4051
+     url: http://localhost:4051
 
 logging:
   level:
