@@ -8,6 +8,8 @@ import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.UUID;
+
 
 @GrpcService
 public class UserServiceImpl extends UserServiceImplBase {
@@ -18,24 +20,24 @@ public class UserServiceImpl extends UserServiceImplBase {
     @Override
     public void getUserById(UserRequest request, StreamObserver<UserResponse> responseObserver) {
         try {
-            User user = userRepository.findByEmail(request.getEmail())
+            UUID userId = UUID.fromString(request.getUserId());
+            User user = userRepository.findById(userId)
                     .orElse(null);
 
             if (user == null) {
                 responseObserver.onError(io.grpc.Status.NOT_FOUND
-                        .withDescription("User not found with email: " + request.getEmail())
+                        .withDescription("User not found with Id: " + request.getUserId())
                         .asRuntimeException());
                 return;
             }
 
             UserResponse response = UserResponse.newBuilder()
-                    .setEmail(user.getEmail())
+                    .setUserId(user.getId().toString())
                     .setUserName(user.getUserName() != null ? user.getUserName() : "")
                     .setImage(user.getImage() != null ? user.getImage() : "")
                     .setDescription(user.getDescription() != null ? user.getDescription() : "")
                     .setDistrict(user.getDistrict() != null ? user.getDistrict() : "")
                     .build();
-
             responseObserver.onNext(response);
             responseObserver.onCompleted();
 

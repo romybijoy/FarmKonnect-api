@@ -6,13 +6,14 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class StoryResponse {
-    private String email;
+    private UUID userId;
     private String userName;
     private String profilePic;
     private List<StoryDto> stories;

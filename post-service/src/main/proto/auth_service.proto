@@ -9,11 +9,11 @@ service UserService {
 }
 
 message UserRequest {
-  string email = 1;
+  string userId = 1;
 }
 
 message UserResponse {
-  string email = 1;
+  string userId = 1;
   string userName = 2;
   string image = 3;
   string district = 4;

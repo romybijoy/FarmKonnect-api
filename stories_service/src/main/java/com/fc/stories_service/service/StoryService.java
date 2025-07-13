@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,21 +29,21 @@ public class StoryService {
     private final StoryRepository storyRepository;
     private final StoryConverter storyConverter;
 
-    public StoryResponse getUserStoriesByEmail(String email) {
-        List<Story> stories = storyRepository.findByEmailAndExpiresAtAfter(email, LocalDateTime.now());
+    public StoryResponse getUserStoriesByUserId(UUID userId) {
+        List<Story> stories = storyRepository.findByUserIdAndExpiresAtAfter(userId, LocalDateTime.now());
 
         List<StoryDto> storyDtos = stories.stream()
                 .map(storyConverter::toDto)
                 .collect(Collectors.toList());
 
         UserRequest request = UserRequest.newBuilder()
-                .setEmail(email != null ? email : "")
+                .setUserId(userId != null ? userId.toString() : "")
                 .build();
         UserResponse user = userStub.getUserById(request);
         return StoryResponse.builder()
                 .userName(user.getUserName())
                 .profilePic(user.getImage())
-                .email(email)
+                .userId(userId)
                 .stories(storyDtos)
                 .build();
 
@@ -51,19 +52,19 @@ public class StoryService {
     public List<StoryResponse> getAllActiveStories() {
         List<Story> stories = storyRepository.findByExpiresAtAfter(LocalDateTime.now());
 
-        // Group stories by email
-        Map<String, List<Story>> grouped = stories.stream()
-                .filter(s -> s.getEmail() != null) // Ignore stories without email
-                .collect(Collectors.groupingBy(Story::getEmail));
+        // Group stories by userId
+        Map<UUID, List<Story>> grouped = stories.stream()
+                .filter(s -> s.getUserId() != null) // Ignore stories without userId
+                .collect(Collectors.groupingBy(Story::getUserId));
 
         List<StoryResponse> responseList = new ArrayList<>();
 
-        for (Map.Entry<String, List<Story>> entry : grouped.entrySet()) {
-            String email = entry.getKey();
+        for (Map.Entry<UUID, List<Story>> entry : grouped.entrySet()) {
+            UUID userId = entry.getKey();
             List<Story> userStories = entry.getValue();
 
             // Fetch user details from gRPC UserService
-            UserRequest request = UserRequest.newBuilder().setEmail(email).build();
+            UserRequest request = UserRequest.newBuilder().setUserId(userId.toString()).build();
             UserResponse user = userStub.getUserById(request);  // gRPC call
 
             // Convert stories to DTO
@@ -74,7 +75,7 @@ public class StoryService {
             // Build StoryResponse
             StoryResponse response = StoryResponse.builder()
                     .userName(user.getUserName())
-                    .email(email)
+                    .userId(userId)
                     .profilePic(user.getImage())
                     .stories(storyDtos)
                     .build();
@@ -89,7 +90,7 @@ public class StoryService {
     public Story createStory(StoryDto req) {
 
         UserRequest request = UserRequest.newBuilder()
-                .setEmail(req.getEmail() != null ? req.getEmail() : "")
+                .setUserId(req.getUserId() != null ? req.getUserId().toString() : "")
                 .build();
         Story story=new Story();
         UserResponse user = userStub.getUserById(request);
@@ -98,7 +99,7 @@ public class StoryService {
         story.setType(req.getType());
         story.setImageUrl(req.getImageUrl());
         story.setVideoUrl(req.getVideoUrl());
-        story.setEmail(req.getEmail());
+        story.setUserId(req.getUserId());
         story.setCreatedAt(LocalDateTime.now());
         story.setExpiresAt(LocalDateTime.now().plusHours(24));
         return storyRepository.save(story);
