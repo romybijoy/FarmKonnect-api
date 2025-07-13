@@ -18,9 +18,7 @@ public class SignalMessage {
 
         private String targetId;
         // For ICE candidate
-        private String candidate;
-        private String sdpMid;
-        private Integer sdpMLineIndex;
+        private ICECandidate candidate;
 
 
 
