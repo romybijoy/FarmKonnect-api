@@ -12,7 +12,7 @@ import java.util.UUID;
 public class StoryDto {
     private UUID id;
     private String type;
-    private String email;
+    private UUID userId;
     private String username;
     private String profilePic;
     private String imageUrl;

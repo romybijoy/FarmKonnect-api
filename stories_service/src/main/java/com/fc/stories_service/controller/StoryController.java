@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,9 +22,9 @@ public class StoryController {
         return ResponseEntity.ok(storyService.createStory(story));
     }
 
-    @GetMapping("/user/{email}")
-    public ResponseEntity<StoryResponse> getUserStories(@PathVariable String email) {
-        return ResponseEntity.ok(storyService.getUserStoriesByEmail(email));
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<StoryResponse> getUserStories(@PathVariable UUID userId) {
+        return ResponseEntity.ok(storyService.getUserStoriesByUserId(userId));
     }
 
     @GetMapping("/active")

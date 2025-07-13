@@ -11,6 +11,6 @@ import java.util.UUID;
 @Repository
 public interface StoryRepository extends JpaRepository<Story, UUID> {
 
-    List<Story> findByEmailAndExpiresAtAfter(String email, LocalDateTime expiresAt);
+    List<Story> findByUserIdAndExpiresAtAfter(UUID userId, LocalDateTime expiresAt);
     List<Story> findByExpiresAtAfter(LocalDateTime now);
 }

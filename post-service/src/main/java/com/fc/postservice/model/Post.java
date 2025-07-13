@@ -22,6 +22,7 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(length = 1000)
     private String content;
 
     private String postImage;
@@ -33,7 +34,7 @@ public class Post {
     private String district;
     private String description;
     private LocalDateTime createdAt;
-    private String email;
+    private UUID userId;
     private List<Long> commentIds;
 
 

@@ -16,7 +16,7 @@ public class Story {
 
     @Column(name = "user_name", nullable = false)
     private String username;
-    private String email;
+    private UUID userId;
     private String profilePic;
     private String imageUrl;
 

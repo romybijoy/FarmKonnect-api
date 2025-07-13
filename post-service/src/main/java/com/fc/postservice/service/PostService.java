@@ -15,6 +15,7 @@ import com.userproto.UserServiceGrpc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class PostService {
@@ -37,14 +38,13 @@ public class PostService {
     public Post createPost(PostRequest req) {
         // Call User Service via gRPC
         UserRequest request = UserRequest.newBuilder()
-                .setEmail(req.getEmail() != null ? req.getEmail() : "")
+                .setUserId(req.getUserId() != null ? req.getUserId().toString() : "")
                 .build();
         UserResponse user = userStub.getUserById(request);
-
         // Create and save post with user info (denormalized)
         Post post = new Post();
         post.setContent(req.getContent());
-        post.setEmail(user.getEmail());
+        post.setUserId(UUID.fromString(user.getUserId()));
         post.setUserName(user.getUserName());
         post.setDescription(user.getDescription());
         post.setImage(user.getImage());

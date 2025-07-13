@@ -27,6 +27,7 @@ public class ChatMessage {
     private UUID groupId;  // Nullable if 1-1 chat
     private String content;
     private String type; // e.g., "TEXT", "IMAGE"
+    private String fileUrl;
     private LocalDateTime timestamp;
 
 

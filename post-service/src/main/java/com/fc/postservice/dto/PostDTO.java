@@ -26,5 +26,5 @@ public class PostDTO {
     private String district;
     private String description;
     private LocalDateTime createdAt;
-    private String email;
+    private UUID userId;
 }
