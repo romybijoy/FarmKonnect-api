@@ -1,14 +1,18 @@
 package com.fc.authservice.service;
 
 import com.fc.authservice.dto.FollowUserDTO;
+import com.fc.authservice.kafka.KafkaProducer;
 import com.fc.authservice.model.FollowRelationship;
+import com.fc.authservice.model.User;
 import com.fc.authservice.repository.FollowRepository;
 import com.fc.authservice.repository.UserRepository;
+import com.fc.notification.FollowEvent;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +25,9 @@ public class FollowService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private KafkaProducer kafkaProducer;
 
     public void followUser(UUID followerId, UUID followingId) {
         if (followerId.equals(followingId)) {
@@ -36,6 +43,24 @@ public class FollowService {
         relationship.setFollowedAt(LocalDateTime.now());
 
         followRepository.save(relationship);
+
+        // 2. Fetch follower details (for sender info)
+        User follower = userRepository.findById(followerId)
+                .orElseThrow(() -> new RuntimeException("Follower not found"));
+
+        // 3. Build and send FollowEvent
+        FollowEvent event = FollowEvent.newBuilder()
+                .setSenderId(relationship.getFollowerId().toString())
+                .setRecipientId(relationship.getFollowingId().toString())
+                .setSenderName(follower.getUserName())
+                .setSenderProfilePic(follower.getImage()) // if available
+                .setTimestamp(relationship.getFollowedAt()
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli())
+                .build();
+
+        kafkaProducer.sendFollowEvent(event);
     }
 
     @Transactional

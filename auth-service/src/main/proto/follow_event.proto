@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package notification;
+
+option java_multiple_files = true;
+option java_package = "com.fc.notification";
+option java_outer_classname = "FollowEventProto";
+
+message FollowEvent {
+  string sender_id = 1;
+  string recipient_id = 2;
+  string sender_name = 3;
+  string sender_profile_pic = 4;
+  int64 timestamp = 5;
+}
+
+message NotificationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+service NotificationService {
+  rpc NotifyFollow(FollowEvent) returns (NotificationResponse);
+}

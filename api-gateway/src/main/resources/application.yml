@@ -59,7 +59,14 @@ spring:
 #            - name: JwtValidation
 #              args:
 #                - excludedPaths: /chat-ws/**
-
+        - id: notification-service-route
+#          uri: http://notification-service:4054
+          uri: http://localhost:4054
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+              - StripPrefix=2
+              - JwtValidation
         - id: api-docs-users-route
 #          uri: http://auth-service:4051
           uri: http://localhost:4051
