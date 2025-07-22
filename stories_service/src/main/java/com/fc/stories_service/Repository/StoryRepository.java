@@ -13,4 +13,8 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
 
     List<Story> findByUserIdAndExpiresAtAfter(UUID userId, LocalDateTime expiresAt);
     List<Story> findByExpiresAtAfter(LocalDateTime now);
+
+    // 🔍 Finds all stories where userId is in the list and the story hasn't expired
+    List<Story> findByUserIdInAndExpiresAtAfter(List<UUID> userIds, LocalDateTime currentTime);
+
 }

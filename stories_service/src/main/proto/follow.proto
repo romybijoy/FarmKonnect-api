@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package follow;
+
+option java_package = "com.fc.authservice.grpc";
+option java_multiple_files = true;
+
+service FollowService {
+  rpc getFollowedUserIds (UserIdRequest) returns (UserIdList);
+}
+
+message UserIdRequest {
+  string userId = 1;
+}
+
+message UserIdList {
+  repeated string userIds = 1;
+}

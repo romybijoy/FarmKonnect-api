@@ -32,6 +32,13 @@ public class StoryController {
         return ResponseEntity.ok(storyService.getAllActiveStories());
     }
 
+    @GetMapping("/following/{userId}")
+    public ResponseEntity<List<StoryResponse>> getFollowingStories(@PathVariable UUID userId) {
+        List<StoryResponse> responses = storyService.getStoriesForUserAndFollowing(userId);
+        return ResponseEntity.ok(responses);
+    }
+
+
 //    @GetMapping("/feed")
 //    public ResponseEntity<List<StoryResponse>> getStoriesFromFollowings(@PathVariable String email) {
 ////    String email = SecurityContextHolder.getContext().getAuthentication().getName();

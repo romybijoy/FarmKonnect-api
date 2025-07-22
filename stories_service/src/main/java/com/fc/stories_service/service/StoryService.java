@@ -3,6 +3,7 @@ package com.fc.stories_service.service;
 import com.fc.stories_service.Repository.StoryRepository;
 import com.fc.stories_service.dto.StoryDto;
 import com.fc.stories_service.dto.StoryResponse;
+import com.fc.stories_service.grpc.FollowServiceClient;
 import com.fc.stories_service.model.Story;
 import com.fc.stories_service.util.StoryConverter;
 import com.userproto.UserRequest;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,7 @@ public class StoryService {
 
     private final StoryRepository storyRepository;
     private final StoryConverter storyConverter;
+    private final FollowServiceClient followClient;
 
     public StoryResponse getUserStoriesByUserId(UUID userId) {
         List<Story> stories = storyRepository.findByUserIdAndExpiresAtAfter(userId, LocalDateTime.now());
@@ -104,6 +107,58 @@ public class StoryService {
         story.setExpiresAt(LocalDateTime.now().plusHours(24));
         return storyRepository.save(story);
     }
+
+    public List<StoryResponse> getStoriesForUserAndFollowing(UUID userId) {
+        List<UUID> followedIds = followClient.getFollowedUserIds(userId);
+        // Include the logged-in user
+        if (!followedIds.contains(userId)) {
+            followedIds.add(userId);
+        }
+
+        List<Story> stories = storyRepository.findByUserIdInAndExpiresAtAfter(followedIds, LocalDateTime.now());
+
+        Map<UUID, List<Story>> groupedStories = stories.stream()
+                .collect(Collectors.groupingBy(Story::getUserId));
+
+        return groupedStories.entrySet().stream().map(entry -> {
+            List<Story> userStories = entry.getValue();
+            Story first = userStories.get(0);
+
+            List<StoryDto> storyDtos = userStories.stream()
+                    .map(story -> {
+                        StoryDto dto = new StoryDto();
+                        dto.setId(story.getId());
+                        dto.setUserId(story.getUserId());
+                        dto.setUsername(story.getUsername());
+                        dto.setProfilePic(story.getProfilePic());
+                        dto.setType(story.getType());
+                        dto.setImageUrl(story.getImageUrl());
+                        dto.setVideoUrl(story.getVideoUrl());
+                        dto.setTimestamp(getTimeAgo(story.getCreatedAt()));
+                        return dto;
+                    }).toList();
+            // Label logged-in user's story as "My Story"
+            String displayName = first.getUserId().equals(userId) ? "My Story" : first.getUsername();
+
+            return StoryResponse.builder()
+                    .userId(first.getUserId())
+                    .userName(displayName)
+                    .profilePic(first.getProfilePic())
+                    .stories(storyDtos)
+                    .build();
+        }).toList();
+    }
+
+    private String getTimeAgo(LocalDateTime time) {
+        Duration duration = Duration.between(time, LocalDateTime.now());
+        long minutes = duration.toMinutes();
+        if (minutes < 60) return minutes + " min ago";
+        long hours = duration.toHours();
+        if (hours < 24) return hours + " hr ago";
+        return duration.toDays() + " days ago";
+    }
+
+
 
 //    public List<StoryDto> getUserStoryDtos(UUID userId) {
 //        List<Story> stories = storyRepository.findByEmailAndExpiresAtAfter(ema, LocalDateTime.now());
