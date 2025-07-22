@@ -35,14 +35,18 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                     throw new IllegalArgumentException("Invalid token");
                 }
                 System.out.println("Received token: " + token);
+
+                // You can store userId as session attribute if you want:
+                String userId = authServiceClient.getUserId(token);
+                System.out.println("Authenticated WebSocket userId: " + userId);
+
+                accessor.setUser(new StompPrincipal(userId));
+                accessor.getSessionAttributes().put("email", userId);
             } else {
                 System.out.println("Missing/invalid token, rejecting...");
                 throw new IllegalArgumentException("Missing or invalid Authorization token");
             }
 
-//            // You can store userId as session attribute if you want:
-//            String userId = authServiceClient.getUserId(token);
-//            accessor.setUser(new StompPrincipal(userId));
         }
 
         return message;

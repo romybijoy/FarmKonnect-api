@@ -1,5 +1,6 @@
 package com.fc.authservice.util;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -10,10 +11,12 @@ import java.util.Base64;
 import java.util.Date;
 import javax.crypto.SecretKey;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+@Getter
 @Component
 public class JwtUtil {
 
@@ -48,5 +51,14 @@ public class JwtUtil {
         } catch (JwtException e) {
             throw new JwtException("Invalid JWT");
         }
+    }
+
+    public Claims validateTokenAndGetClaims(String token) {
+        return Jwts
+                .parser()
+                .verifyWith((SecretKey) secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

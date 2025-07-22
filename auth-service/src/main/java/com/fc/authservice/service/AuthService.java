@@ -2,11 +2,16 @@ package com.fc.authservice.service;
 
 import com.fc.authservice.dto.UsersDTO;
 import com.fc.authservice.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import java.util.Optional;
+
+import io.jsonwebtoken.Jwts;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
 
 @Service
 public class AuthService {
@@ -42,5 +47,16 @@ public class AuthService {
         } catch (JwtException e){
             return false;
         }
+    }
+
+    public String extractUserId(String token) {
+        // Logic to parse the token and extract user ID
+        Claims claims = Jwts.parser()
+                .verifyWith((SecretKey) jwtUtil.getSecretKey()) // Use SecretKey here
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.getSubject(); // Or claims.get("userId")
     }
 }

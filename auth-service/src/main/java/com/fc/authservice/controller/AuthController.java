@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @Tag(name = "Users", description = "API for managing users")
 public class AuthController {
@@ -73,6 +76,31 @@ public class AuthController {
                 ? ResponseEntity.ok().build()
                 : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
+
+    @GetMapping("/auth/user")
+    @Operation(summary = "Get current user info from token")
+    public ResponseEntity<Map<String, String>> getUserFromToken(
+            @RequestHeader("Authorization") String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            String token = authHeader.substring(7); // Remove "Bearer "
+            String userId = authService.extractUserId(token); // or extractUsername()
+
+            Map<String, String> response = new HashMap<>();
+            response.put("userId", userId);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the error
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
     @Operation(summary = "Verify account")
     @PutMapping("/auth/verify-account")

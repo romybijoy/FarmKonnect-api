@@ -77,7 +77,7 @@ public class FollowService {
                 .filter(Optional::isPresent)
                 .map(optUser -> {
                     var user = optUser.get();
-                    return new FollowUserDTO(user.getId(), user.getUserName(), user.getImage());
+                    return new FollowUserDTO(user.getId(), user.getUserName(), user.getImage(), user.getEmail());
                 })
                 .toList();
     }
@@ -89,7 +89,7 @@ public class FollowService {
                 .filter(Optional::isPresent)
                 .map(optUser -> {
                     var user = optUser.get();
-                    return new FollowUserDTO(user.getId(), user.getUserName(), user.getImage());
+                    return new FollowUserDTO(user.getId(), user.getUserName(), user.getImage(), user.getEmail());
                 })
                 .toList();
     }

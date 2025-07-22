@@ -15,6 +15,6 @@ public class FollowUserDTO {
     private UUID id;
     private String username;
     private String profilePicture;
-
+    private String email;
 
 }

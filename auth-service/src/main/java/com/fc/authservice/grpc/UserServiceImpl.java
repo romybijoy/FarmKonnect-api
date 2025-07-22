@@ -5,6 +5,7 @@ import com.userproto.UserRequest;
 import com.userproto.UserResponse;
 import com.userproto.UserServiceGrpc.UserServiceImplBase;
 import io.grpc.stub.StreamObserver;
+import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 
 @GrpcService
+@RequiredArgsConstructor
 public class UserServiceImpl extends UserServiceImplBase {
 
     @Autowired
@@ -48,6 +50,7 @@ public class UserServiceImpl extends UserServiceImplBase {
                     .asRuntimeException());
         }
     }
+
 
 }
 
