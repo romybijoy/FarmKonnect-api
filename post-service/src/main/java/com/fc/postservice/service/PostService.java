@@ -37,8 +37,15 @@ public class PostService {
 
     public Post createPost(PostRequest req) {
         // Call User Service via gRPC
+
+        System.out.println(req.toString());
+        UUID userId = req.getUserId();
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must not be null");
+        }
+
         UserRequest request = UserRequest.newBuilder()
-                .setUserId(req.getUserId() != null ? req.getUserId().toString() : "")
+                .setUserId(userId.toString())
                 .build();
         UserResponse user = userStub.getUserById(request);
         // Create and save post with user info (denormalized)

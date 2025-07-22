@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package post;
+
+option java_package = "com.postservice";
+option java_multiple_files = true;
+
+service PostService {
+  rpc getPostsByUserIds (UserIdsRequest) returns (PostListResponse);
+}
+
+message UserIdsRequest {
+  repeated string userIds = 1; // UUIDs as strings
+}
+
+message PostMessage {
+  string id = 1;
+  string userId = 2;
+  string userName = 3;
+  string profilePic = 4;
+  string content = 5;
+  string imageUrl = 6;
+  string createdAt = 7;
+  int32 likeCount = 8;
+  int32 commentCount = 9;
+  int32 repostCount = 10;
+  int32 shareCount = 11;
+}
+
+message PostListResponse {
+  repeated PostMessage posts = 1;
+}

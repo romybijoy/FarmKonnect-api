@@ -62,10 +62,17 @@ spring:
 #          uri: http://notification-service:4054
           uri: http://localhost:4054
           predicates:
-            - Path=/api/notifications/**
+              - Path=/api/notifications/**
           filters:
               - StripPrefix=2
               - JwtValidation
+        - id: feed-service-route
+          uri: http://localhost:4055
+          predicates:
+            - Path=/api/feed/**
+          filters:
+            - StripPrefix=2
+            - JwtValidation
         - id: api-docs-users-route
 #          uri: http://auth-service:4051
           uri: http://localhost:4051
