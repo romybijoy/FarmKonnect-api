@@ -1,8 +1,6 @@
 package com.fc.feedservice.client;
 
-import com.postservice.PostMessage;
-import com.postservice.UserIdsRequest;
-import com.postservice.PostServiceGrpc;
+import com.postservice.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -34,5 +32,14 @@ public class PostServiceClient {
                 .build();
 
         return postServiceBlockingStub.getPostsByUserIds(request).getPostsList();
+    }
+
+    public LikePostResponse likePost(UUID userId, UUID postId) {
+        LikePostRequest request = LikePostRequest.newBuilder()
+                .setUserId(userId.toString())
+                .setPostId(postId.toString())
+                .build();
+
+        return postServiceBlockingStub.likePost(request);
     }
 }

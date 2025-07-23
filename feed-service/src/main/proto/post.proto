@@ -7,6 +7,9 @@ option java_multiple_files = true;
 
 service PostService {
   rpc getPostsByUserIds (UserIdsRequest) returns (PostListResponse);
+
+  // New LikePost RPC
+  rpc likePost (LikePostRequest) returns (LikePostResponse);
 }
 
 message UserIdsRequest {
@@ -21,6 +24,22 @@ message PostMessage {
   string content = 5;
   string imageUrl = 6;
   string createdAt = 7;
+  int32 likeCount = 8;
+  int32 commentCount = 9;
+  int32 repostCount = 10;
+  int32 shareCount = 11;
+}
+
+// NEW: LikePostRequest message
+message LikePostRequest {
+  string postId = 1;
+  string userId = 2; // The user who is liking the post
+}
+
+// NEW: LikePostResponse message
+message LikePostResponse {
+  bool liked = 1;
+  int32 likeCount = 2;
 }
 
 message PostListResponse {

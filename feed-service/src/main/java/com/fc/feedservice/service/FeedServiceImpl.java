@@ -3,8 +3,11 @@ package com.fc.feedservice.service;
 import com.fc.feedservice.client.FollowServiceClient;
 import com.fc.feedservice.client.PostServiceClient;
 import com.fc.feedservice.client.UserServiceClient;
+import com.fc.feedservice.dto.LikeResponseDto;
 import com.fc.feedservice.dto.PostDto;
 import com.fc.feedservice.dto.UserDto;
+import com.postservice.LikePostRequest;
+import com.postservice.LikePostResponse;
 import com.postservice.PostMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -55,4 +58,9 @@ public class FeedServiceImpl {
                 .district(user.getDistrict())
                 .build();
     }
+    public LikeResponseDto likePost(UUID userId, UUID postId) {
+        LikePostResponse response = postServiceClient.likePost(userId, postId);
+        return new LikeResponseDto(response.getLiked(), response.getLikeCount());
+    }
+
 }
