@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option java_package = "com.followservice";
+option java_multiple_files = true;
+
+service FollowFeedService {
+  rpc getFollowedUsers (FollowRequest) returns (FollowResponse);
+}
+
+message FollowRequest {
+  string userId = 1;
+}
+
+message FollowResponse {
+  repeated string userIds = 1;
+}
