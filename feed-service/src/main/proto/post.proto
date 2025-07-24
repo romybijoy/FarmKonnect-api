@@ -10,6 +10,9 @@ service PostService {
 
   // New LikePost RPC
   rpc likePost (LikePostRequest) returns (LikePostResponse);
+
+  rpc savePost(SavePostRequest) returns (SavePostResponse);
+  rpc getSavedPosts(GetSavedPostsRequest) returns (GetSavedPostsResponse);
 }
 
 message UserIdsRequest {
@@ -43,5 +46,27 @@ message LikePostResponse {
 }
 
 message PostListResponse {
+  repeated PostMessage posts = 1;
+}
+
+
+// Save/Unsave request
+message SavePostRequest {
+  string postId = 1;
+  string userId = 2;
+}
+
+// SavePostResponse
+message SavePostResponse {
+  bool saved = 1;         // true if now saved, false if unsaved
+  string message = 2;     // optional response message
+}
+
+// Fetch Saved Posts
+message GetSavedPostsRequest {
+  string userId = 1;
+}
+
+message GetSavedPostsResponse {
   repeated PostMessage posts = 1;
 }

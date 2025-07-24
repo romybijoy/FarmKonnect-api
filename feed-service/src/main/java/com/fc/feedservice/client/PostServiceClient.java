@@ -42,4 +42,24 @@ public class PostServiceClient {
 
         return postServiceBlockingStub.likePost(request);
     }
+
+    public boolean toggleSavePost(UUID userId, UUID postId) {
+        SavePostRequest request = SavePostRequest.newBuilder()
+                .setUserId(userId.toString())
+                .setPostId(postId.toString())
+                .build();
+
+        SavePostResponse response = postServiceBlockingStub.savePost(request);
+        return response.getSaved(); // true = saved, false = unsaved
+    }
+
+    public List<PostMessage> getSavedPosts(UUID userId) {
+        GetSavedPostsRequest request = GetSavedPostsRequest.newBuilder()
+                .setUserId(userId.toString())
+                .build();
+
+        GetSavedPostsResponse response = postServiceBlockingStub.getSavedPosts(request);
+        return response.getPostsList();
+    }
+
 }

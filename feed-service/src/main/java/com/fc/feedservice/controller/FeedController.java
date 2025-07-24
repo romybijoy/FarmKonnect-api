@@ -1,16 +1,14 @@
 package com.fc.feedservice.controller;
 
-import com.fc.feedservice.client.FollowServiceClient;
-import com.fc.feedservice.client.PostServiceClient;
 import com.fc.feedservice.dto.LikeResponseDto;
 import com.fc.feedservice.dto.PostDto;
 import com.fc.feedservice.service.FeedServiceImpl;
-import com.postservice.PostMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,5 +27,16 @@ public class FeedController {
         return ResponseEntity.ok(feedService.likePost(userId, postId));
     }
 
+    @PostMapping("/save/{postId}")
+    public ResponseEntity<Map<String, Object>> toggleSavePost(
+            @RequestHeader("userId") UUID userId,
+            @PathVariable UUID postId) {
+        boolean saved = feedService.toggleSavePost(userId, postId);
+        return ResponseEntity.ok(Map.of("saved", saved));
+    }
 
+    @GetMapping("/saved")
+    public ResponseEntity<List<PostDto>> getSavedPosts(@RequestHeader("userId") UUID userId) {
+        return ResponseEntity.ok(feedService.getSavedPosts(userId));
+    }
 }

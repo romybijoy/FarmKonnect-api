@@ -6,14 +6,12 @@ import com.fc.feedservice.client.UserServiceClient;
 import com.fc.feedservice.dto.LikeResponseDto;
 import com.fc.feedservice.dto.PostDto;
 import com.fc.feedservice.dto.UserDto;
-import com.postservice.LikePostRequest;
 import com.postservice.LikePostResponse;
 import com.postservice.PostMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -61,6 +59,14 @@ public class FeedServiceImpl {
     public LikeResponseDto likePost(UUID userId, UUID postId) {
         LikePostResponse response = postServiceClient.likePost(userId, postId);
         return new LikeResponseDto(response.getLiked(), response.getLikeCount());
+    }
+    public List<PostDto> getSavedPosts(UUID userId) {
+        List<PostMessage> grpcPosts = postServiceClient.getSavedPosts(userId);
+        return grpcPosts.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    public boolean toggleSavePost(UUID userId, UUID postId) {
+        return postServiceClient.toggleSavePost(userId, postId);
     }
 
 }
