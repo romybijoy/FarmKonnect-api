@@ -1,0 +1,17 @@
+package com.fc.chatservice.repository;
+
+import com.fc.chatservice.model.MessageReaction;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface MessageReactionRepository extends JpaRepository<MessageReaction, UUID> {
+
+    List<MessageReaction> findByMessageId(UUID messageId);
+
+    Optional<MessageReaction> findByMessageIdAndUserId(UUID messageId, UUID userId);
+
+    void deleteByMessageIdAndUserId(UUID messageId, UUID userId);
+}

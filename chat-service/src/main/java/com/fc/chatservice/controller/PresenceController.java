@@ -22,7 +22,6 @@ public class PresenceController {
     @GetMapping("/{email}")
     public ResponseEntity<UserPresence> getUserPresence(@PathVariable String email) {
         UserPresence presence = presenceService.getPresence(email);
-        System.out.println("Presence returned: " + presence);
         return ResponseEntity.ok(presence);
     }
 }

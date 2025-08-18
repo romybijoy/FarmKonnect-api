@@ -51,7 +51,7 @@ spring:
 #          uri: http://chat-service:4052
           uri: http://localhost:4052
           predicates:
-            - Path=/api/chat/**, /api/presence/**
+            - Path=/api/chat/**, /api/presence/**, /api/reactions/**
           filters:
             - JwtValidation
             - RewritePath=/api/chat/(?<segment>.*), /$\{segment}
