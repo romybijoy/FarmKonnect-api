@@ -22,8 +22,8 @@ public class ChatService {
         return repository.save(message);
     }
 
-    public List<ChatMessage> getMessagesByUser(UUID userId) {
-        return repository.findBySenderIdOrReceiverIdOrderByTimestampAsc(userId, userId);
+    public List<ChatMessage> getPrivateChat(UUID senderId, UUID receiverId) {
+        return repository.findBySenderAndReceiver(senderId, receiverId);
     }
 
     public List<ChatMessage> getMessagesByGroup(UUID groupId) {
