@@ -1,5 +1,6 @@
 package com.fc.authservice.controller;
 
+import com.fc.authservice.dto.OtpVerificationRequest;
 import com.fc.authservice.dto.UsersDTO;
 import com.fc.authservice.service.AuthService;
 import com.fc.authservice.service.UserService;
@@ -104,20 +105,34 @@ public class AuthController {
 
     @Operation(summary = "Verify account")
     @PutMapping("/auth/verify-account")
-    public ResponseEntity<UsersDTO> verifyAccount(@RequestParam String email,
-                                                  @RequestParam String otp) {
-        UsersDTO response = usersManagementService.verifyAccount(email, otp);
-        if(response.getStatusCode() == 500){
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    public ResponseEntity<UsersDTO> verifyAccount(@RequestBody OtpVerificationRequest request) {
+        UsersDTO usersDTO = userService.verifyAccount(
+                request.getCurrentEmail(),
+                request.getOtp(),
+                request.isUpdateEmail(),
+                request.getNewEmail()
+        );
+        return new ResponseEntity<>(usersDTO, HttpStatus.valueOf(usersDTO.getStatusCode()));
     }
 
     @Operation(summary = "Generate OTP")
     @PutMapping("/auth/regenerate-otp")
-    public ResponseEntity<UsersDTO> regenerateOtp(@RequestParam String email) {
-        return new ResponseEntity<>(usersManagementService.regenerateOtp(email), HttpStatus.OK);
+    public ResponseEntity<UsersDTO> regenerateOtp(
+            @RequestParam String email,
+            @RequestParam boolean isUpdateEmail,
+            @RequestParam(required = false) String currentEmail
+    ) {
+        UsersDTO response = usersManagementService.regenerateOtp(email, isUpdateEmail, currentEmail);
+
+        if (response.getStatusCode() == 200) {
+            return ResponseEntity.ok(response);
+        } else if (response.getStatusCode() == 409) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
     }
+
 
     @Operation(summary = "Forgot password")
     @PutMapping("/auth/forgot-password")

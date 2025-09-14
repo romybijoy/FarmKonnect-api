@@ -30,6 +30,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     void updateBlockInfo(@Param("block_reason") String block_reason, @Param("userId") UUID userId);
 
     @Query(value = "SELECT * FROM users p WHERE p.enabled=true", nativeQuery = true)
+
     List<User> findAllByStatus();
 
     Page<User> findByEnabled(Boolean enabled, Pageable pageDetails);
@@ -39,4 +40,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Page<User> findByUserNameOrEmailIgnoreCaseContainingAndEnabled(String keyword, String email, Boolean enabled, Pageable pageDetails);
 
     User findByUserName(String userName);
+
+    List<User> findByIdIn(List<UUID> ids);
 }
