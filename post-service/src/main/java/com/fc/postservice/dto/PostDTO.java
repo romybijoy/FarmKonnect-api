@@ -27,4 +27,9 @@ public class PostDTO {
     private String description;
     private LocalDateTime createdAt;
     private UUID userId;
+
+    private boolean isRepost = false;
+    private UUID originalPostId;
+    private UUID repostedBy;
+    private LocalDateTime repostedAt;
 }

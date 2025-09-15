@@ -3,10 +3,8 @@ package com.fc.feedservice.service;
 import com.fc.feedservice.client.FollowServiceClient;
 import com.fc.feedservice.client.PostServiceClient;
 import com.fc.feedservice.client.UserServiceClient;
-import com.fc.feedservice.dto.LikeResponseDto;
 import com.fc.feedservice.dto.PostDto;
 import com.fc.feedservice.dto.UserDto;
-import com.postservice.LikePostResponse;
 import com.postservice.PostMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,13 +34,17 @@ public class FeedServiceImpl {
 
         // 4. Convert to PostDto
         return grpcPosts.stream()
-                .map(this::mapToDto)
+                .map(post -> mapToDto(post, userId))
                 .collect(Collectors.toList());
     }
 
-    private PostDto mapToDto(PostMessage post) {
+    private PostDto mapToDto(PostMessage post, UUID currentUserId) {
         // Fetch user info via gRPC (you need to implement this part)
         UserDto user = userServiceClient.getUserById(UUID.fromString(post.getUserId()));
+
+        boolean likedByCurrentUser = postServiceClient.isPostLikedByUser(currentUserId, UUID.fromString(post.getId()));
+        int likeCount = postServiceClient.getLikeCount(UUID.fromString(post.getId()));
+        boolean savedByCurrentUser = postServiceClient.isPostSavedByUser(currentUserId, UUID.fromString(post.getId()));
 
         return PostDto.builder()
                 .id(UUID.fromString(post.getId()))
@@ -54,19 +56,16 @@ public class FeedServiceImpl {
                 .description(user.getDescription())
                 .image(user.getProfileImage())
                 .district(user.getDistrict())
+
+                .likedByCurrentUser(likedByCurrentUser)
+                .likeCount(likeCount)
+                .savedByCurrentUser(savedByCurrentUser)
                 .build();
     }
-    public LikeResponseDto likePost(UUID userId, UUID postId) {
-        LikePostResponse response = postServiceClient.likePost(userId, postId);
-        return new LikeResponseDto(response.getLiked(), response.getLikeCount());
-    }
-    public List<PostDto> getSavedPosts(UUID userId) {
-        List<PostMessage> grpcPosts = postServiceClient.getSavedPosts(userId);
-        return grpcPosts.stream().map(this::mapToDto).collect(Collectors.toList());
-    }
 
-    public boolean toggleSavePost(UUID userId, UUID postId) {
-        return postServiceClient.toggleSavePost(userId, postId);
+
+    public UUID repost(UUID userId, UUID originalPostId) {
+       return postServiceClient.repost(userId,originalPostId);
     }
 
 }

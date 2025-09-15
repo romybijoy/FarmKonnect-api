@@ -1,6 +1,5 @@
 package com.fc.feedservice.controller;
 
-import com.fc.feedservice.dto.LikeResponseDto;
 import com.fc.feedservice.dto.PostDto;
 import com.fc.feedservice.service.FeedServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -22,21 +21,12 @@ public class FeedController {
         return feedService.getFeed(userId);
     }
 
-    @PostMapping("/{userId}/like/{postId}")
-    public ResponseEntity<LikeResponseDto> likePost(@PathVariable UUID userId, @PathVariable UUID postId) {
-        return ResponseEntity.ok(feedService.likePost(userId, postId));
-    }
+    @PostMapping("/repost/{postId}")
+    public ResponseEntity<?> repost(
+            @PathVariable UUID postId,
+            @RequestHeader("userId") UUID userId) {
 
-    @PostMapping("/save/{postId}")
-    public ResponseEntity<Map<String, Object>> toggleSavePost(
-            @RequestHeader("userId") UUID userId,
-            @PathVariable UUID postId) {
-        boolean saved = feedService.toggleSavePost(userId, postId);
-        return ResponseEntity.ok(Map.of("saved", saved));
-    }
-
-    @GetMapping("/saved")
-    public ResponseEntity<List<PostDto>> getSavedPosts(@RequestHeader("userId") UUID userId) {
-        return ResponseEntity.ok(feedService.getSavedPosts(userId));
+        UUID newPostId = feedService.repost(userId, postId);
+        return ResponseEntity.ok(Map.of("repostedPostId", newPostId));
     }
 }

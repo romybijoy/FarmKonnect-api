@@ -27,7 +27,7 @@ public class Post {
 
     private String postImage;
 
-    private String image;
+    private String image; // user image
 
     private String userName;
 
@@ -37,5 +37,10 @@ public class Post {
     private UUID userId;
     private List<Long> commentIds;
 
+    //repost
+    private boolean isRepost = false;
+    private UUID originalPostId;
+    private UUID repostedBy;
+    private LocalDateTime repostedAt;
 
 }

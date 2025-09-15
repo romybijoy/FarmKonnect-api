@@ -1,12 +1,10 @@
 package com.fc.postservice.service;
 
-import com.fc.postservice.model.PostLike;
-import com.fc.postservice.model.SavedPost;
-import com.fc.postservice.model.SavedPostId;
+import com.fc.postservice.model.*;
+import com.fc.postservice.model.Post;
 import com.fc.postservice.repository.PostLikeRepository;
 import com.fc.postservice.repository.SavedPostRepository;
 import com.postservice.*;
-import com.fc.postservice.model.Post;
 import com.fc.postservice.repository.PostRepository;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -16,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,7 +25,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final SavedPostRepository savedPostRepository;
-
+    private final PostLikeService postLikeService;
     @Override
     public void getPostsByUserIds(UserIdsRequest request, StreamObserver<PostListResponse> responseObserver) {
         List<UUID> userIds = request.getUserIdsList().stream()
@@ -35,17 +34,24 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
         List<Post> posts = postRepository.findByUserIdInOrderByCreatedAtDesc(userIds);
 
-        List<PostMessage> grpcPosts = posts.stream().map(post ->
-                PostMessage.newBuilder()
+        List<PostMessage> grpcPosts = posts.stream().map(post -> {
+            PostMessage.Builder builder = PostMessage.newBuilder()
                         .setId(post.getId().toString())
                         .setUserId(post.getUserId().toString())
-                        .setImageUrl(post.getPostImage())
-                        .setProfilePic(post.getImage())
-                        .setContent(post.getContent())
-                        .setUserName(post.getUserName())
-                        .setCreatedAt(post.getCreatedAt().toString()) // You may format date as needed
-                        .build()
-        ).collect(Collectors.toList());
+                        .setContent(Optional.ofNullable(post.getContent()).orElse(""))
+                        .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
+                        .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "");
+
+        if (post.getPostImage() != null) {
+            builder.setImageUrl(post.getPostImage());
+        }
+
+        if (post.getImage() != null) {  // profilePic
+            builder.setProfilePic(post.getImage());
+        }
+
+        return builder.build();
+    }).collect(Collectors.toList());
 
         PostListResponse response = PostListResponse.newBuilder()
                 .addAllPosts(grpcPosts)
@@ -63,7 +69,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
             UUID userId = UUID.fromString(request.getUserId());
 
             // Ensure post exists
-            postRepository.findById(postId)
+            Post post = postRepository.findById(postId)
                     .orElseThrow(() -> new RuntimeException("Post not found"));
 
             boolean liked;
@@ -72,8 +78,8 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
                 postLikeRepository.deleteByPostIdAndUserId(postId, userId);
                 liked = false;
             } else {
-                PostLike like = new PostLike();
-                like.setPostId(postId);
+                Like like = new Like();
+                like.setPost(post);
                 like.setUserId(userId);
                 postLikeRepository.save(like);
                 liked = true;
@@ -97,26 +103,104 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         }
     }
 
+
     @Override
+    @Transactional
     public void savePost(SavePostRequest request, StreamObserver<SavePostResponse> responseObserver) {
+        try {
+            UUID postId = UUID.fromString(request.getPostId());
+            UUID userId = UUID.fromString(request.getUserId());
+
+            Post post = postRepository.findById(postId)
+                    .orElseThrow(() -> new RuntimeException("Post not found"));
+
+            boolean saved;
+
+            // Check if already saved
+            Optional<Save> existing = savedPostRepository.findByUserIdAndPostId(postId, userId);
+            if (existing.isPresent()) {
+                savedPostRepository.delete(existing.get());
+                saved = false;
+            } else {
+                Save save = new Save();
+                save.setPost(post);
+                save.setUserId(userId);
+                save.setSavedAt(LocalDateTime.now());
+                savedPostRepository.save(save);
+                saved = true;
+            }
+
+            SavePostResponse response = SavePostResponse.newBuilder()
+                    .setSaved(saved)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Error in savePost: " + e.getMessage())
+                    .withCause(e)
+                    .asRuntimeException());
+        }
+    }
+
+
+    @Override
+    public void getSavedPosts(GetSavedPostsRequest request, StreamObserver<GetSavedPostsResponse> responseObserver) {
+        try {
+            UUID userId = UUID.fromString(request.getUserId());
+
+            List<Save> savedPosts = savedPostRepository.findByUserId(userId);
+
+            List<Post> posts = savedPosts.stream()
+                    .map(Save::getPost)
+                    .toList();
+
+            List<PostMessage> grpcPosts = posts.stream()
+                    .map(this::mapToGrpc)
+                    .toList();
+
+            GetSavedPostsResponse response = GetSavedPostsResponse.newBuilder()
+                    .addAllPosts(grpcPosts)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Error in getSavedPosts: " + e.getMessage())
+                    .withCause(e)
+                    .asRuntimeException());
+        }
+    }
+
+    @Override
+    public void isPostLikedByUser(IsPostLikedByUserRequest request,
+                                  StreamObserver<IsPostLikedByUserResponse> responseObserver) {
         UUID postId = UUID.fromString(request.getPostId());
         UUID userId = UUID.fromString(request.getUserId());
-        SavedPostId id = new SavedPostId(postId, userId);
 
-        boolean saved;
-        if (savedPostRepository.existsById(id)) {
-            savedPostRepository.deleteById(id);
-            saved = false;
-        } else {
-            SavedPost savedPost = SavedPost.builder()
-                    .id(id)
-                    .savedAt(LocalDateTime.now())
-                    .build();
-            savedPostRepository.save(savedPost);
-            saved = true;
-        }
+        boolean liked = postLikeService.isPostLikedByUser(postId, userId);
 
-        SavePostResponse response = SavePostResponse.newBuilder()
+        IsPostLikedByUserResponse response = IsPostLikedByUserResponse.newBuilder()
+                .setLiked(liked)
+                .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void isPostSavedByUser(IsPostSavedByUserRequest request,
+                                  StreamObserver<IsPostSavedByUserResponse> responseObserver) {
+        UUID postId = UUID.fromString(request.getPostId());
+        UUID userId = UUID.fromString(request.getUserId());
+
+        boolean saved = postLikeService.isPostSavedByUser(postId, userId);
+
+        IsPostSavedByUserResponse response = IsPostSavedByUserResponse.newBuilder()
                 .setSaved(saved)
                 .build();
 
@@ -125,26 +209,20 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
     }
 
     @Override
-    public void getSavedPosts(GetSavedPostsRequest request, StreamObserver<GetSavedPostsResponse> responseObserver) {
-        UUID userId = UUID.fromString(request.getUserId());
+    public void getLikeCount(GetLikeCountRequest request,
+                             StreamObserver<GetLikeCountResponse> responseObserver) {
+        UUID postId = UUID.fromString(request.getPostId());
+        long likeCount = postLikeService.getLikeCount(postId);
 
-        List<SavedPost> savedPosts = savedPostRepository.findByIdUserId(userId);
-        List<Post> posts = postRepository.findAllById(
-                savedPosts.stream().map(sp -> sp.getId().getPostId()).collect(Collectors.toList())
-        );
-
-        List<PostMessage> grpcPosts = posts.stream()
-                .map(this::mapToGrpc)
-                .collect(Collectors.toList());
-
-        GetSavedPostsResponse response = GetSavedPostsResponse.newBuilder()
-                .addAllPosts(grpcPosts)
+        GetLikeCountResponse response = GetLikeCountResponse.newBuilder()
+                .setLikeCount((int) likeCount)
                 .build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
+    // Utility method: convert entity -> gRPC message
     private PostMessage mapToGrpc(Post post) {
         return PostMessage.newBuilder()
                 .setId(post.getId().toString())
@@ -155,5 +233,45 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
                 .build();
     }
 
+    @Override
+    public void repost(RepostRequest request, StreamObserver<RepostResponse> responseObserver) {
+        try {
+            // Fetch the original post
+            Optional<Post> originalPostOpt = postRepository.findById(UUID.fromString(request.getOriginalPostId()));
+            if (originalPostOpt.isEmpty()) {
+                responseObserver.onError(
+                        Status.NOT_FOUND.withDescription("Original post not found").asRuntimeException()
+                );
+                return;
+            }
+
+            Post originalPost = originalPostOpt.get();
+
+            // Create a new post as a repost (only referencing the original)
+            Post repost = new Post();
+            repost.setRepostedBy(UUID.fromString(request.getRepostedBy())); // Who is sharing
+            repost.setRepost(true);
+            repost.setOriginalPostId(originalPost.getId());
+            repost.setRepostedAt(LocalDateTime.now());
+            repost.setUserId(UUID.fromString(request.getRepostedBy())); // owner of the repost
+
+            // Optional: Set commentary content by user (from request)
+//            if (!request.getCommentary().isBlank()) {
+//                repost.setContent(request.getCommentary());
+//            }
+
+            Post saved = postRepository.save(repost);
+
+            RepostResponse response = RepostResponse.newBuilder()
+                    .setNewPostId(saved.getId().toString())
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL.withDescription("Server error").asRuntimeException());
+        }
+    }
 
 }
