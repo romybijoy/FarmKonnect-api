@@ -26,6 +26,8 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
     private final PostLikeRepository postLikeRepository;
     private final SavedPostRepository savedPostRepository;
     private final PostLikeService postLikeService;
+    private final PostSaveService postSaveService;
+
     @Override
     public void getPostsByUserIds(UserIdsRequest request, StreamObserver<PostListResponse> responseObserver) {
         List<UUID> userIds = request.getUserIdsList().stream()
@@ -198,7 +200,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         UUID postId = UUID.fromString(request.getPostId());
         UUID userId = UUID.fromString(request.getUserId());
 
-        boolean saved = postLikeService.isPostSavedByUser(postId, userId);
+        boolean saved = postSaveService.isPostSavedByUser(postId, userId);
 
         IsPostSavedByUserResponse response = IsPostSavedByUserResponse.newBuilder()
                 .setSaved(saved)

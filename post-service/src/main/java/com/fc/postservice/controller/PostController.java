@@ -4,6 +4,7 @@ import com.fc.postservice.dto.PostDTO;
 import com.fc.postservice.dto.PostRequest;
 import com.fc.postservice.model.Post;
 import com.fc.postservice.service.PostLikeService;
+import com.fc.postservice.service.PostSaveService;
 import com.fc.postservice.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +24,9 @@ public class PostController {
     private PostService postService;
     @Autowired
     private PostLikeService postLikeService;
+    @Autowired
+    private PostSaveService postSaveService;
+
 
     @GetMapping("/get")
     @Operation(summary = "Get post")
@@ -70,26 +74,32 @@ public class PostController {
     @PostMapping("/{postId}/save")
     public ResponseEntity<String> savePost(@PathVariable UUID postId,
                                            @RequestParam UUID userId) {
-        postLikeService.savePost(postId, userId);
+        postSaveService.savePost(postId, userId);
         return ResponseEntity.ok("Post saved");
     }
 
     @DeleteMapping("/{postId}/save")
     public ResponseEntity<String> unsavePost(@PathVariable UUID postId,
                                              @RequestParam UUID userId) {
-        postLikeService.unsavePost(postId, userId);
+        postSaveService.unsavePost(postId, userId);
         return ResponseEntity.ok("Post unsaved");
     }
 
     @GetMapping("/{postId}/save-status")
     public boolean isPostSaved(@PathVariable UUID postId,
                                @RequestParam UUID userId) {
-        return postLikeService.isPostSavedByUser(postId, userId);
+        return postSaveService.isPostSavedByUser(postId, userId);
     }
 
     @GetMapping("/{postId}/save-count")
     public long getSaveCount(@PathVariable UUID postId) {
-        return postLikeService.getSaveCount(postId);
+        return postSaveService.getSaveCount(postId);
     }
+
+    @GetMapping("/saved/{userId}")
+    public ResponseEntity<List<PostDTO>> getSavedPosts(@PathVariable UUID userId) {
+        return ResponseEntity.ok(postSaveService.getSavedPosts(userId));
     }
+}
+
 
