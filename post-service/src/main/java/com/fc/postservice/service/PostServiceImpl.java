@@ -36,24 +36,9 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
         List<Post> posts = postRepository.findByUserIdInOrderByCreatedAtDesc(userIds);
 
-        List<PostMessage> grpcPosts = posts.stream().map(post -> {
-            PostMessage.Builder builder = PostMessage.newBuilder()
-                        .setId(post.getId().toString())
-                        .setUserId(post.getUserId().toString())
-                        .setContent(Optional.ofNullable(post.getContent()).orElse(""))
-                        .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
-                        .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "");
-
-        if (post.getPostImage() != null) {
-            builder.setImageUrl(post.getPostImage());
-        }
-
-        if (post.getImage() != null) {  // profilePic
-            builder.setProfilePic(post.getImage());
-        }
-
-        return builder.build();
-    }).collect(Collectors.toList());
+        List<PostMessage> grpcPosts = posts.stream()
+                .map(this::toGrpcPost)
+                .collect(Collectors.toList());
 
         PostListResponse response = PostListResponse.newBuilder()
                 .addAllPosts(grpcPosts)
@@ -62,6 +47,47 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
+
+
+    private PostMessage toGrpcPost(Post post) {
+        PostMessage.Builder builder = PostMessage.newBuilder()
+                .setId(post.getId().toString())
+                .setUserId(post.getUserId().toString())
+                .setContent(Optional.ofNullable(post.getContent()).orElse(""))
+                .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
+                .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "");
+
+        if (post.getPostImage() != null) {
+            builder.setImageUrl(post.getPostImage());
+        }
+
+        if (post.getImage() != null) { // profilePic
+            builder.setProfilePic(post.getImage());
+        }
+
+        // handle repost details
+        if (post.isRepost() && post.getOriginalPostId() != null) {
+            builder.setIsRepost(true)
+                    .setOriginalPostId(post.getOriginalPostId().toString());
+
+            if (post.getRepostedBy() != null) {
+                builder.setRepostedBy(post.getRepostedBy().toString());
+            }
+//            if (post.getRepostedByName() != null) {
+//                builder.setRepostedByName(post.getRepostedByName());
+//            }
+//            if (post.getRepostedByImage() != null) {
+//                builder.setRepostedByImage(post.getRepostedByImage());
+//            }
+            if (post.getRepostedAt() != null) {
+                builder.setRepostedAt(post.getRepostedAt().toString());
+            }
+        }
+
+        return builder.build();
+    }
+
+
 
     @Override
     @Transactional
@@ -236,44 +262,17 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
     }
 
     @Override
-    public void repost(RepostRequest request, StreamObserver<RepostResponse> responseObserver) {
-        try {
-            // Fetch the original post
-            Optional<Post> originalPostOpt = postRepository.findById(UUID.fromString(request.getOriginalPostId()));
-            if (originalPostOpt.isEmpty()) {
-                responseObserver.onError(
-                        Status.NOT_FOUND.withDescription("Original post not found").asRuntimeException()
-                );
-                return;
-            }
+    public void getPostById(PostIdRequest request, StreamObserver<PostMessage> responseObserver) {
+        UUID postId = UUID.fromString(request.getPostId());
 
-            Post originalPost = originalPostOpt.get();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
 
-            // Create a new post as a repost (only referencing the original)
-            Post repost = new Post();
-            repost.setRepostedBy(UUID.fromString(request.getRepostedBy())); // Who is sharing
-            repost.setRepost(true);
-            repost.setOriginalPostId(originalPost.getId());
-            repost.setRepostedAt(LocalDateTime.now());
-            repost.setUserId(UUID.fromString(request.getRepostedBy())); // owner of the repost
+        PostMessage grpcPost = toGrpcPost(post);
 
-            // Optional: Set commentary content by user (from request)
-//            if (!request.getCommentary().isBlank()) {
-//                repost.setContent(request.getCommentary());
-//            }
-
-            Post saved = postRepository.save(repost);
-
-            RepostResponse response = RepostResponse.newBuilder()
-                    .setNewPostId(saved.getId().toString())
-                    .build();
-
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-
-        } catch (Exception e) {
-            responseObserver.onError(Status.INTERNAL.withDescription("Server error").asRuntimeException());
-        }
+        responseObserver.onNext(grpcPost);
+        responseObserver.onCompleted();
     }
+
 
 }

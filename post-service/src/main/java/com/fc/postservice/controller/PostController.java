@@ -2,6 +2,8 @@ package com.fc.postservice.controller;
 
 import com.fc.postservice.dto.PostDTO;
 import com.fc.postservice.dto.PostRequest;
+import com.fc.postservice.dto.UserDto;
+import com.fc.postservice.mapper.PostMapper;
 import com.fc.postservice.model.Post;
 import com.fc.postservice.service.PostLikeService;
 import com.fc.postservice.service.PostSaveService;
@@ -16,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.fc.postservice.mapper.PostMapper.mapToDto;
+
 @RestController
 @Tag(name = "Posts", description = "API for managing posts")
 public class PostController {
@@ -27,6 +31,7 @@ public class PostController {
     @Autowired
     private PostSaveService postSaveService;
 
+    private PostMapper postMapper;
 
     @GetMapping("/get")
     @Operation(summary = "Get post")
@@ -99,6 +104,16 @@ public class PostController {
     @GetMapping("/saved/{userId}")
     public ResponseEntity<List<PostDTO>> getSavedPosts(@PathVariable UUID userId) {
         return ResponseEntity.ok(postSaveService.getSavedPosts(userId));
+    }
+
+    @PostMapping("/{postId}/repost/{userId}")
+    public ResponseEntity<PostDTO> repost(
+            @PathVariable UUID postId,
+            @PathVariable UUID userId,
+            @RequestBody UserDto userDto) {
+
+        Post repost = postService.repost(postId, userId, userDto.getName(), userDto.getProfileImage());
+        return ResponseEntity.ok(mapToDto(repost));
     }
 }
 

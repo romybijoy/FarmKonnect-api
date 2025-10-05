@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import com.postservice.*;
 
 
 @Slf4j
@@ -64,16 +63,6 @@ public class PostServiceClient {
         return response.getPostsList();
     }
 
-    public UUID repost(UUID userId, UUID originalPostId) {
-        RepostRequest request = RepostRequest.newBuilder()
-                .setOriginalPostId(originalPostId.toString())
-                .setRepostedBy(userId.toString())
-                .build();
-
-        RepostResponse response = postServiceBlockingStub.repost(request);
-        return UUID.fromString(response.getNewPostId());
-    }
-
     public boolean isPostLikedByUser(UUID userId, UUID postId) {
         IsPostLikedByUserRequest request = IsPostLikedByUserRequest.newBuilder()
                 .setUserId(userId.toString())
@@ -99,5 +88,14 @@ public class PostServiceClient {
 
         return postServiceBlockingStub.isPostSavedByUser(request).getSaved();
     }
+
+    public PostMessage getPostById(UUID postId) {
+        PostIdRequest request = PostIdRequest.newBuilder()
+                .setPostId(postId.toString())
+                .build();
+
+        return postServiceBlockingStub.getPostById(request);
+    }
+
 
 }

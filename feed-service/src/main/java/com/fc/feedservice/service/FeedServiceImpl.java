@@ -46,7 +46,7 @@ public class FeedServiceImpl {
     }
 
     private PostDto mapToDto(PostMessage post, UUID currentUserId) {
-        // Fetch user info via gRPC (you need to implement this part)
+        // Fetch user info
         UserDto user = userServiceClient.getUserById(UUID.fromString(post.getUserId()));
 
         boolean likedByCurrentUser = postServiceClient.isPostLikedByUser(currentUserId, UUID.fromString(post.getId()));
@@ -57,34 +57,63 @@ public class FeedServiceImpl {
         if (post.getCreatedAt() != null && !post.getCreatedAt().isBlank()) {
             try {
                 createdAt = LocalDateTime.parse(post.getCreatedAt());
-                // Works if it's ISO format, e.g. "2025-09-18T15:40:00"
             } catch (DateTimeParseException e) {
-                System.out.println("Invalid createdAt format: " + post.getCreatedAt());
-                // Optionally try a custom formatter if needed
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 createdAt = LocalDateTime.parse(post.getCreatedAt(), formatter);
             }
         }
+
+        // Base DTO
+        PostDto dto = PostDto.builder()
+                .id(UUID.fromString(post.getId()))
+                .userId(UUID.fromString(post.getUserId()))
+                .content(post.getContent())
+                .postImage(post.getImageUrl()) // fixed from getImageUrl()
+                .createdAt(createdAt)
+                .userName(user.getName())
+                .description(user.getDescription())
+                .image(user.getProfileImage())
+                .district(user.getDistrict())
+                .likedByCurrentUser(likedByCurrentUser)
+                .likeCount(likeCount)
+                .savedByCurrentUser(savedByCurrentUser)
+                .isRepost(post.getIsRepost())
+                .originalPostId(
+                        post.getOriginalPostId() != null && !post.getOriginalPostId().isBlank()
+                                ? UUID.fromString(post.getOriginalPostId())
+                                : null)
+                .repostedAt(
+                        post.getRepostedAt() != null && !post.getRepostedAt().isBlank()
+                                ? LocalDateTime.parse(post.getRepostedAt())
+                                : null)
+                .build();
+
+        // If repost, fetch original post (limit recursion)
+        if (dto.isRepost() && dto.getOriginalPostId() != null) {
+            PostMessage original = postServiceClient.getPostById(dto.getOriginalPostId());
+            dto.setOriginalPost(mapBasePost(original, currentUserId)); // shallow map
+        }
+
+        return dto;
+    }
+
+    // Helper: shallow mapping for original posts
+    private PostDto mapBasePost(PostMessage post, UUID currentUserId) {
+        UserDto user = userServiceClient.getUserById(UUID.fromString(post.getUserId()));
+
         return PostDto.builder()
                 .id(UUID.fromString(post.getId()))
                 .userId(UUID.fromString(post.getUserId()))
                 .content(post.getContent())
                 .postImage(post.getImageUrl())
-                .createdAt(createdAt) // if string, else convert appropriately
+                .createdAt(LocalDateTime.parse(post.getCreatedAt()))
                 .userName(user.getName())
                 .description(user.getDescription())
                 .image(user.getProfileImage())
                 .district(user.getDistrict())
-
-                .likedByCurrentUser(likedByCurrentUser)
-                .likeCount(likeCount)
-                .savedByCurrentUser(savedByCurrentUser)
                 .build();
     }
 
 
-    public UUID repost(UUID userId, UUID originalPostId) {
-       return postServiceClient.repost(userId,originalPostId);
-    }
 
 }

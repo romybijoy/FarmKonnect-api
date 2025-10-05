@@ -18,12 +18,20 @@ public class PostDto {
     private String image;
     private String district;
     private LocalDateTime createdAt;
-    private boolean isRepost = false;
-    private UUID originalPostId;
-    private UUID repostedBy;
-    private LocalDateTime repostedAt;
+
 
     private boolean likedByCurrentUser;
     private int likeCount;
     private boolean savedByCurrentUser;
+
+
+    private boolean isRepost;
+    private UUID repostedBy;
+    private UUID originalPostId;
+    private String repostedByName;
+    private String repostedByImage;
+    private LocalDateTime repostedAt;
+
+    // ✅ Nested Original Post
+    private PostDto originalPost;
 }

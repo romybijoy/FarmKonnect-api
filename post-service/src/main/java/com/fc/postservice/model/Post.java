@@ -39,7 +39,10 @@ public class Post {
 
     //repost
     private boolean isRepost = false;
+
+    @Column(name = "original_post_id")
     private UUID originalPostId;
+
     private UUID repostedBy;
     private LocalDateTime repostedAt;
 

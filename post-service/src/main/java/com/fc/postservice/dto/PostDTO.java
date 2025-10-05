@@ -28,8 +28,13 @@ public class PostDTO {
     private LocalDateTime createdAt;
     private UUID userId;
 
-    private boolean isRepost = false;
-    private UUID originalPostId;
+    private boolean repost;
     private UUID repostedBy;
+    private String repostedByName;
+    private String repostedByImage;
     private LocalDateTime repostedAt;
+    private UUID originalPostId;
+
+    // ✅ Nested Original Post
+    private PostDTO originalPost;
 }

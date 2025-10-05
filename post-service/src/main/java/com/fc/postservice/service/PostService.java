@@ -60,4 +60,23 @@ public class PostService {
 
         return postRepository.save(post);
     }
+
+
+    public Post repost(UUID originalPostId, UUID userId, String userName, String userImage) {
+        Post original = postRepository.findById(originalPostId)
+                .orElseThrow(() -> new RuntimeException("Original post not found"));
+
+        Post repost = new Post();
+        repost.setRepost(true);
+        repost.setOriginalPostId(original.getId());
+        repost.setRepostedBy(userId);
+        repost.setRepostedAt(LocalDateTime.now());
+
+        // store snapshot of user who reposted
+        repost.setUserId(userId);
+        repost.setUserName(userName);
+        repost.setImage(userImage);
+
+        return postRepository.save(repost);
+    }
 }

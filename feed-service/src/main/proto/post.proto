@@ -14,11 +14,10 @@ service PostService {
   rpc savePost(SavePostRequest) returns (SavePostResponse);
   rpc getSavedPosts(GetSavedPostsRequest) returns (GetSavedPostsResponse);
 
-  rpc repost(RepostRequest) returns (RepostResponse);
-
   rpc IsPostLikedByUser(IsPostLikedByUserRequest) returns (IsPostLikedByUserResponse);
   rpc IsPostSavedByUser(IsPostSavedByUserRequest) returns (IsPostSavedByUserResponse);
   rpc GetLikeCount(GetLikeCountRequest) returns (GetLikeCountResponse);
+  rpc GetPostById(PostIdRequest) returns (PostMessage);
 }
 
 message UserIdsRequest {
@@ -35,12 +34,12 @@ message PostMessage {
   string createdAt = 7;
   int32 likeCount = 8;
   int32 commentCount = 9;
-  int32 repostCount = 10;
-  string originalPostId = 11;
-  string repostedBy = 12;
-  bool isRepost = 13;
-  int32 shareCount = 14;
-  string repostedAt = 15;
+  int32 shareCount = 10;
+  bool isRepost = 11;
+  optional string repostedAt = 12;
+  string repostedBy = 13;
+  optional string originalPostId = 14;
+
 }
 
 // NEW: LikePostRequest message
@@ -81,17 +80,6 @@ message GetSavedPostsResponse {
   repeated PostMessage posts = 1;
 }
 
-// Request to repost an existing post
-message RepostRequest {
-  string originalPostId = 1;   // ID of the original post
-  string repostedBy = 2;       // User ID of the user who is reposting
-}
-
-// Response with the new reposted post ID
-message RepostResponse {
-  string newPostId = 1;        // ID of the newly created repost
-}
-
 message IsPostLikedByUserRequest {
   string postId = 1;
   string userId = 2;
@@ -116,4 +104,8 @@ message GetLikeCountRequest {
 
 message GetLikeCountResponse {
   int32 likeCount = 1;
+}
+
+message PostIdRequest {
+  string postId = 1;
 }
