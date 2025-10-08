@@ -10,6 +10,9 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -22,6 +25,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
+    private static final Logger log = LoggerFactory.getLogger(PostServiceImpl.class);
+
+    @Value("${server.port}")
+    private String port;
+
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final SavedPostRepository savedPostRepository;
@@ -30,6 +38,8 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
     @Override
     public void getPostsByUserIds(UserIdsRequest request, StreamObserver<PostListResponse> responseObserver) {
+        log.info("Handling request on port {}", port);
+
         List<UUID> userIds = request.getUserIdsList().stream()
                 .map(UUID::fromString)
                 .collect(Collectors.toList());
@@ -47,6 +57,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
+
 
 
     private PostMessage toGrpcPost(Post post) {

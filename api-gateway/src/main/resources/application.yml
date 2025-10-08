@@ -89,14 +89,14 @@ spring:
           filters:
             - RewritePath=/api-docs/post,/v3/api-docs
 
-#eureka:
-#  client:
-#    register-with-eureka: true
-#    fetch-registry: true
-#    service-url:
-#      defaultZone: http://eureka-server:8761/eureka
-#  instance:
-#    prefer-ip-address: true
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
 
 server:
   port: 4004

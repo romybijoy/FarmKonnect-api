@@ -1,9 +1,8 @@
 package com.fc.feedservice.client;
 
 import com.postservice.*;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import lombok.extern.slf4j.Slf4j;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,17 +14,9 @@ import java.util.stream.Collectors;
 @Service
 public class PostServiceClient {
 
-    private final PostServiceGrpc.PostServiceBlockingStub postServiceBlockingStub;
+    @GrpcClient("post-service")
+    private PostServiceGrpc.PostServiceBlockingStub postServiceBlockingStub;
 
-    public PostServiceClient() {
-        // Ensure this matches your PostService gRPC host and port
-        ManagedChannel channel = ManagedChannelBuilder
-                .forAddress("localhost", 9095)
-                .usePlaintext()
-                .build();
-
-        postServiceBlockingStub = PostServiceGrpc.newBlockingStub(channel);
-    }
 
     public List<PostMessage> getPostsByUserIds(List<UUID> userIds) {
         UserIdsRequest request = UserIdsRequest.newBuilder()
