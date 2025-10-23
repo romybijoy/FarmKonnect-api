@@ -5,6 +5,10 @@ spring:
     web-application-type: reactive
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
       globalcors:
         corsConfigurations:
           '[/**]':
@@ -23,7 +27,8 @@ spring:
       routes:
         - id: auth-service-route
 #          uri: http://auth-service:4051
-          uri: http://localhost:4051
+#          uri: http://localhost:4051
+          uri: lb://auth-service
           predicates:
             - Path=/user/**
           filters:
@@ -31,7 +36,8 @@ spring:
 
         - id: post-service-route
 #          uri: http://post-service:4050
-          uri: http://localhost:4050
+#          uri: http://localhost:4050
+          uri: lb://post-service
           predicates:
             - Path=/api/post/**
           filters:
@@ -40,7 +46,8 @@ spring:
           # Route for /api/story/** to stories-service
         - id: story-service-route
 #          uri: http://stories-service:4053
-          uri: http://localhost:4053
+#          uri: http://localhost:4053
+          uri: lb://stories-service
           predicates:
             - Path=/api/stories/**
           filters:
@@ -49,7 +56,8 @@ spring:
 
         - id: chat-service-route
 #          uri: http://chat-service:4052
-          uri: http://localhost:4052
+#          uri: http://localhost:4052
+          uri: lb://chat-service
           predicates:
             - Path=/api/chat/**, /api/presence/**, /api/reactions/**
           filters:
@@ -60,14 +68,16 @@ spring:
 #                - excludedPaths: /chat-ws/**
         - id: notification-service-route
 #          uri: http://notification-service:4054
-          uri: http://localhost:4054
+#          uri: http://localhost:4054
+          uri: lb://notification-service
           predicates:
               - Path=/api/notifications/**
           filters:
               - StripPrefix=2
               - JwtValidation
         - id: feed-service-route
-          uri: http://localhost:4055
+#          uri: http://localhost:4055
+          uri: lb://feed-service
           predicates:
             - Path=/api/feed/**
           filters:
@@ -75,7 +85,8 @@ spring:
             - JwtValidation
         - id: api-docs-users-route
 #          uri: http://auth-service:4051
-          uri: http://localhost:4051
+#          uri: http://localhost:4051
+          uri: lb://auth-service
           predicates:
             - Path=/api-docs/users
           filters:
@@ -83,7 +94,8 @@ spring:
 
         - id: api-docs-post-route
 #          uri: http://post-service:4050
-          uri: http://localhost:4050
+#          uri: http://localhost:4050
+          uri: lb://post-service
           predicates:
             - Path=/api-docs/post
           filters:
@@ -96,7 +108,8 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka
   instance:
-    prefer-ip-address: true
+    prefer-ip-address: false
+    hostname: localhost
 
 server:
   port: 4004

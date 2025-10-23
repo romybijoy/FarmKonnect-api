@@ -10,10 +10,14 @@ import java.util.Map;
 @Service
 public class AuthServiceClient {
 
-    @Value("${auth-service.url}")
-    private String authServiceUrl;
+    private final RestTemplate restTemplate;
+    private final String authServiceUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    public AuthServiceClient(RestTemplate restTemplate,
+                             @Value("${auth-service.url}") String authServiceUrl) {
+        this.restTemplate = restTemplate;
+        this.authServiceUrl = authServiceUrl;
+    }
 
     public boolean validateToken(String token) {
         try {
