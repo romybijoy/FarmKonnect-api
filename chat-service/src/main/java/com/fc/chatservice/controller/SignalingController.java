@@ -19,6 +19,12 @@ public class SignalingController {
     // Video/Audio call signaling
     @MessageMapping("/call/signal")
     public void handleSignal(@Payload SignalMessage message) {
+
+        System.out.println("[Signal Received] " + message);
+
+        // ✅ Log just the callType
+        System.out.println("[Signal Received] callType: " + message.getCallType());
+
         String targetUserId = switch (message.getType()) {
             case "offer" -> message.getReceiverId();
             case "answer" -> message.getCallerId();

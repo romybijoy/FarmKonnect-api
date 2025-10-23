@@ -13,6 +13,8 @@ public class SignalMessage {
         private String callerId;
         private String receiverId;
 
+        private String callType;
+
         // For SDP (offer/answer)
         private String sdp;
 
