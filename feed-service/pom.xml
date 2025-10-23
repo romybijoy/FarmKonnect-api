@@ -103,6 +103,11 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
             <version>4.3.0</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>2.1.0</version>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>com.fc</groupId>-->
 <!--            <artifactId>post-service</artifactId>-->

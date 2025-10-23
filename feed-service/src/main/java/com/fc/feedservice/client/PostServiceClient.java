@@ -1,10 +1,12 @@
 package com.fc.feedservice.client;
 
 import com.postservice.*;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -17,7 +19,7 @@ public class PostServiceClient {
     @GrpcClient("post-service")
     private PostServiceGrpc.PostServiceBlockingStub postServiceBlockingStub;
 
-
+    @CircuitBreaker(name = "postServiceCB", fallbackMethod = "fallbackGetPosts")
     public List<PostMessage> getPostsByUserIds(List<UUID> userIds) {
         UserIdsRequest request = UserIdsRequest.newBuilder()
                 .addAllUserIds(userIds.stream().map(UUID::toString).collect(Collectors.toList()))
@@ -88,5 +90,10 @@ public class PostServiceClient {
         return postServiceBlockingStub.getPostById(request);
     }
 
+
+    private List<PostMessage> fallbackGetPosts(List<UUID> userIds, Throwable t) {
+        System.err.println("PostService down. Using fallback. Reason: " + t.getMessage());
+        return Collections.emptyList(); // return safe empty feed
+    }
 
 }
