@@ -26,7 +26,7 @@ public class JwtValidationGatewayFilterFactory extends AbstractGatewayFilterFact
             String path = exchange.getRequest().getURI().getPath();
 
             // Skip validation for WebSocket endpoint (if applicable)
-            if (path.startsWith("/chat-ws")) {
+            if (path.startsWith("/chat-ws") || path.startsWith("/api/post/admin")) {
                 return chain.filter(exchange);
             }
 
