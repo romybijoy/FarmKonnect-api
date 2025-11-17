@@ -5,12 +5,16 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Controller
 public class SignalingController {
 
     private final SimpMessagingTemplate messagingTemplate;
+
+    private static final Logger logger = LoggerFactory.getLogger(SignalingController.class);
 
     public SignalingController(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
@@ -20,10 +24,10 @@ public class SignalingController {
     @MessageMapping("/call/signal")
     public void handleSignal(@Payload SignalMessage message) {
 
-        System.out.println("[Signal Received] " + message);
+        logger.debug("[Signal Received] {}", message);
 
         // ✅ Log just the callType
-        System.out.println("[Signal Received] callType: " + message.getCallType());
+        logger.info("[Signal Received] callType: {}", message.getCallType());
 
         String targetUserId = switch (message.getType()) {
             case "offer" -> message.getReceiverId();

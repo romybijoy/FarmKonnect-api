@@ -1,6 +1,5 @@
 package com.fc.chatservice.service;
 
-import com.fc.chatservice.dto.ReactionDTO;
 import com.fc.chatservice.dto.ReactionEvent;
 import com.fc.chatservice.dto.ReactionResponse;
 import com.fc.chatservice.model.MessageReaction;
@@ -8,7 +7,6 @@ import com.fc.chatservice.repository.MessageReactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +17,6 @@ import com.userproto.UserServiceGrpc;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +44,7 @@ public class MessageReactionService {
                     user.getUserName(),
                     user.getImage()
             );
-        }).collect(Collectors.toList()); // or `.toList()` in Java 16+
+        }).toList();
     }
 
     public MessageReaction reactToMessage(UUID messageId, UUID userId, String emoji) {

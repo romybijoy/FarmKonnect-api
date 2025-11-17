@@ -1,4 +1,4 @@
-package com.fc.stories_service.Repository;
+package com.fc.stories_service.repository;
 
 import com.fc.stories_service.model.Story;
 import org.springframework.data.jpa.repository.JpaRepository;

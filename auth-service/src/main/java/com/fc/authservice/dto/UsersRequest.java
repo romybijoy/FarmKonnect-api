@@ -29,7 +29,7 @@ public class UsersRequest {
     @NotBlank(message = "Mobile number is required")
     @Size(min = 10, max = 10, message = "Mobile Number must be exactly 10 digits long")
     @Pattern(regexp = "^\\d{10}$", message = "Mobile Number must contain only Numbers")
-    private String mobile_number;
+    private String mobileNumber;
 
     @NotBlank(message = "Password is required")
     @ValidPassword
@@ -39,7 +39,7 @@ public class UsersRequest {
     private String district;
     private Role role;
     private String image;
-    private String block_reason;
+    private String blockReason;
     private boolean enabled;
     private User ourUsers;
 

@@ -31,6 +31,6 @@ public class FollowRelationship {
     private LocalDateTime followedAt = LocalDateTime.now();
 
     public FollowRelationship() {
-
+        // Default constructor required by JPA
     }
 }

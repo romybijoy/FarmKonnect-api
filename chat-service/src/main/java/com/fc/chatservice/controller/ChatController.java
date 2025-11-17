@@ -1,6 +1,5 @@
 package com.fc.chatservice.controller;
 
-import com.fc.chatservice.dto.TypingStatusDTO;
 import com.fc.chatservice.model.ChatMessage;
 import com.fc.chatservice.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,14 +13,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("")
 public class ChatController {
+
+    private static final String PRIVATE_TOPIC_PREFIX = "/topic/private/";
+    private static final String EMAIL = "email";
+    private static final String TYPING = "isTyping";
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
     private final ChatService chatService;
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
 
     public ChatController(ChatService chatService) {
         this.chatService = chatService;
@@ -36,20 +44,20 @@ public class ChatController {
             messagingTemplate.convertAndSend("/topic/group/" + saved.getGroupId(), saved);
         } else {
             // Send to receiver
-            messagingTemplate.convertAndSend("/topic/private/" + saved.getReceiverId(), saved);
+            messagingTemplate.convertAndSend(PRIVATE_TOPIC_PREFIX + saved.getReceiverId(), saved);
 
             // Also send to sender (so that sender sees their own message as realtime confirmation)
-            messagingTemplate.convertAndSend("/topic/private/" + saved.getSenderId(), saved);
+            messagingTemplate.convertAndSend(PRIVATE_TOPIC_PREFIX + saved.getSenderId(), saved);
         }
     }
 
     @MessageMapping("/typing")
     public void handleTyping(Map<String, Object> payload) {
-        String email = (String) payload.get("email");
-        Boolean isTyping = (Boolean) payload.get("isTyping");
+        String email = (String) payload.get(EMAIL);
+        Boolean isTyping = (Boolean) payload.get(TYPING);
 
         if (email == null || isTyping == null) return;
-        System.out.println("Typing received: email=" + email + ", isTyping=" + isTyping);
+        logger.debug("Typing received: email={}, isTyping={}", email, isTyping);
         if (payload.containsKey("receiverId")) {
             // Private chat typing
             String receiverId = (String) payload.get("receiverId");
@@ -57,7 +65,7 @@ public class ChatController {
             messagingTemplate.convertAndSendToUser(
                     receiverId,
                     "/queue/typing",
-                    Map.of("email", email, "isTyping", isTyping)
+                    Map.of(EMAIL, email, TYPING, isTyping)
             );
 
         } else if (payload.containsKey("groupId")) {
@@ -66,7 +74,7 @@ public class ChatController {
 
             messagingTemplate.convertAndSend(
                     "/topic/typing/group/" + groupId,
-                    Map.of("email", email, "isTyping", isTyping)
+                    Map.of(EMAIL, email, TYPING, isTyping)
             );
         }
     }
@@ -79,7 +87,7 @@ public class ChatController {
         if (saved.getGroupId() != null) {
             messagingTemplate.convertAndSend("/topic/group/" + saved.getGroupId(), saved);
         } else {
-            messagingTemplate.convertAndSend("/topic/private/" + saved.getReceiverId(), saved);
+            messagingTemplate.convertAndSend(PRIVATE_TOPIC_PREFIX + saved.getReceiverId(), saved);
         }
 
         return ResponseEntity.ok(saved);

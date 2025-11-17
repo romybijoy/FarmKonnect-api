@@ -3,7 +3,6 @@ package com.fc.postservice.controller;
 import com.fc.postservice.dto.PostDTO;
 import com.fc.postservice.dto.PostRequest;
 import com.fc.postservice.dto.UserDto;
-import com.fc.postservice.mapper.PostMapper;
 import com.fc.postservice.model.Post;
 import com.fc.postservice.service.PostLikeService;
 import com.fc.postservice.service.PostSaveService;
@@ -30,8 +29,6 @@ public class PostController {
     private PostLikeService postLikeService;
     @Autowired
     private PostSaveService postSaveService;
-
-    private PostMapper postMapper;
 
     @GetMapping("/get")
     @Operation(summary = "Get post")

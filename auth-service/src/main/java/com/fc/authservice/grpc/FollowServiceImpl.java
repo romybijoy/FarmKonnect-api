@@ -1,6 +1,5 @@
 package com.fc.authservice.grpc;
 
-import com.fc.authservice.model.FollowRelationship;
 import com.authservice.grpc.FollowServiceGrpc;
 import com.authservice.grpc.UserIdRequest;
 import com.authservice.grpc.UserIdList;
@@ -8,7 +7,6 @@ import com.fc.authservice.repository.FollowRepository;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
-//import org.lognet.springboot.grpc.GRpcService;
 
 import java.util.List;
 import java.util.UUID;

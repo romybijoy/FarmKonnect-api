@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,7 +20,9 @@ public class FeedController {
 
     private final HiddenPostService hiddenPostService;
 
-   @GetMapping("/{userId}")
+    private static final Logger logger = LoggerFactory.getLogger(FeedController.class);
+
+    @GetMapping("/{userId}")
     public List<PostDto> getFeed(@PathVariable UUID userId) {
         return feedService.getFeed(userId);
     }
@@ -27,10 +31,8 @@ public class FeedController {
     public ResponseEntity<Void> hidePostFromFeed(
             @PathVariable UUID userId,
             @PathVariable UUID postId) {
-       System.out.println("reached");
+        logger.debug("hidePostFromFeed reached for userId={} postId={}", userId, postId);
         hiddenPostService.hidePost(userId, postId);
         return ResponseEntity.ok().build();
     }
-    }
-
-
+}

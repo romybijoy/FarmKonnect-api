@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +53,7 @@ public class CommentService {
 
         return comments.stream()
                 .map(this::mapToDtoWithReplies)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private CommentDto mapToDtoWithReplies(Comment comment) {
@@ -80,7 +79,7 @@ public class CommentService {
                 .replies(
                         comment.getReplies().stream()
                                 .map(this::mapToDtoWithReplies) // recursive mapping
-                                .collect(Collectors.toList())
+                                .toList()
                 )
                 .build();
     }

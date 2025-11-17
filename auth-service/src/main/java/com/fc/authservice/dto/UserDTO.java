@@ -16,10 +16,10 @@ public class UserDTO {
     private String name;
     private String city;
     private String email;
-    private String mobile_number;
+    private String mobileNumber;
     private Role role;
     private String image;
-    private String block_reason;
+    private String blockReason;
     private String description;
     private String district;
     private boolean enabled;

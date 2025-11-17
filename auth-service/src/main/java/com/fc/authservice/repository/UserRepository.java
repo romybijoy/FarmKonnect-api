@@ -22,12 +22,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query(value = "SELECT * FROM users p WHERE p.name LIKE %?1% OR p.email LIKE %?1% OR p.role=?2", nativeQuery = true)
     List<User> search(@Param("keyword") String keyword, @Param("role") String role);
 
-    List<User> findByRoleContaining(String Role);
+    List<User> findByRoleContaining(String role);
 
     @Transactional
     @Query(value = "UPDATE users p SET p.block_reason = ?1, p.enabled = false WHERE p.id = ?2", nativeQuery = true)
     @Modifying
-    void updateBlockInfo(@Param("block_reason") String block_reason, @Param("userId") UUID userId);
+    void updateBlockInfo(@Param("blockReason") String blockReason, @Param("userId") UUID userId);
 
     @Query(value = "SELECT * FROM users p WHERE p.enabled=true", nativeQuery = true)
 
@@ -42,4 +42,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     User findByUserName(String userName);
 
     List<User> findByIdIn(List<UUID> ids);
+
+    boolean existsByEmailIgnoreCase(String email);
 }

@@ -5,6 +5,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class UserPresenceService {
@@ -14,6 +16,8 @@ public class UserPresenceService {
 
     private final RedisTemplate<String, String> redisTemplate;
 
+    private static final Logger logger = LoggerFactory.getLogger(UserPresenceService.class);
+
     public UserPresenceService(RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
@@ -21,10 +25,10 @@ public class UserPresenceService {
     public UserPresence getPresence(String email) {
         Boolean isOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, email);
 
-        System.out.println("Checking presence for userId: [" + email + "], isOnline: " + isOnline+"]");
+        logger.debug("Checking presence for userId: [{}], isOnline: {}", email, isOnline);
         UserPresence result;
         if (Boolean.TRUE.equals(isOnline)) {
-            System.out.println("presence true");
+            logger.debug("presence true for {}", email);
             result = new UserPresence(true, null);
             return result;
         } else {
@@ -42,7 +46,7 @@ public class UserPresenceService {
     // Optionally: Call when user connects/disconnects
     public void setUserOnline(String email) {
         redisTemplate.opsForSet().add(ONLINE_USERS_KEY, email);
-        System.out.println("User set as ONLINE in Redis: " + email);
+        logger.info("User set as ONLINE in Redis: {}", email);
     }
 
     public void setUserOffline(String email) {
@@ -51,7 +55,6 @@ public class UserPresenceService {
                 LAST_SEEN_KEY_PREFIX + email,
                 LocalDateTime.now().toString()
         );
-        System.out.println("User set as OFFLINE in Redis: " + email);
+        logger.info("User set as OFFLINE in Redis: {}", email);
     }
 }
-

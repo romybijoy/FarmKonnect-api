@@ -16,7 +16,6 @@ public class JwtUtil {
     private final SecretKey secretKey;
 
     public JwtUtil(@Value("${jwt.secret}") String secret) {
-        System.out.println("Injected Secret: " + secret);
         if (secret == null || secret.isEmpty()) {
             throw new IllegalStateException("JWT secret is missing or not injected!");
         }

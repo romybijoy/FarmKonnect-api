@@ -1,6 +1,6 @@
 package com.fc.stories_service.service;
 
-import com.fc.stories_service.Repository.StoryRepository;
+import com.fc.stories_service.repository.StoryRepository;
 import com.fc.stories_service.dto.StoryDto;
 import com.fc.stories_service.dto.StoryResponse;
 import com.fc.stories_service.grpc.FollowServiceClient;
@@ -35,9 +35,9 @@ public class StoryService {
     public StoryResponse getUserStoriesByUserId(UUID userId) {
         List<Story> stories = storyRepository.findByUserIdAndExpiresAtAfter(userId, LocalDateTime.now());
 
-        List<StoryDto> storyDtos = stories.stream()
+        List<StoryDto> storyDtos = new ArrayList<>(stories.stream()
                 .map(storyConverter::toDto)
-                .collect(Collectors.toList());
+                .toList());
 
         UserRequest request = UserRequest.newBuilder()
                 .setUserId(userId != null ? userId.toString() : "")
@@ -73,7 +73,7 @@ public class StoryService {
             // Convert stories to DTO
             List<StoryDto> storyDtos = userStories.stream()
                     .map(storyConverter::toDto)
-                    .collect(Collectors.toList());
+                    .toList();
 
             // Build StoryResponse
             StoryResponse response = StoryResponse.builder()
@@ -109,7 +109,7 @@ public class StoryService {
     }
 
     public List<StoryResponse> getStoriesForUserAndFollowing(UUID userId) {
-        List<UUID> followedIds = followClient.getFollowedUserIds(userId);
+        List<UUID> followedIds = new ArrayList<>(followClient.getFollowedUserIds(userId));
         // Include the logged-in user
         if (!followedIds.contains(userId)) {
             followedIds.add(userId);
@@ -120,11 +120,10 @@ public class StoryService {
         Map<UUID, List<Story>> groupedStories = stories.stream()
                 .collect(Collectors.groupingBy(Story::getUserId));
 
-        return groupedStories.entrySet().stream().map(entry -> {
-            List<Story> userStories = entry.getValue();
-            Story first = userStories.get(0);
+        return groupedStories.values().stream().map(userStories -> {
+            Story first = userStories.getFirst();
 
-            List<StoryDto> storyDtos = userStories.stream()
+            List<StoryDto> storyDto = userStories.stream()
                     .map(story -> {
                         StoryDto dto = new StoryDto();
                         dto.setId(story.getId());
@@ -144,7 +143,7 @@ public class StoryService {
                     .userId(first.getUserId())
                     .userName(displayName)
                     .profilePic(first.getProfilePic())
-                    .stories(storyDtos)
+                    .stories(storyDto)
                     .build();
         }).toList();
     }
@@ -158,14 +157,6 @@ public class StoryService {
         return duration.toDays() + " days ago";
     }
 
-
-
-//    public List<StoryDto> getUserStoryDtos(UUID userId) {
-//        List<Story> stories = storyRepository.findByEmailAndExpiresAtAfter(ema, LocalDateTime.now());
-//        return stories.stream()
-//                .map(StoryConverter::toDto)
-//                .collect(Collectors.toList());
-//    }
 
 }
 

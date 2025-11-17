@@ -3,6 +3,8 @@ package com.fc.postservice.controller;
 import com.fc.postservice.dto.admin.PostDetailAdminDto;
 import com.fc.postservice.dto.admin.PostResponse;
 import com.fc.postservice.service.AdminPostService;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -64,13 +66,14 @@ public class AdminPostController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
 
-        // TODO: implement actions: remove, restore, pin, warn_user, suspend_user, etc.
     }
 
-    // Simple DTO for admin action request (you can move to a separate file)
+
+    @Getter
+    @Setter// Simple DTO for admin action request (you can move to a separate file)
     public static class AdminActionRequest {
-        public String action;      // e.g. "remove", "restore", "pin"
-        public String reason;
-        public String moderatorId;
+        private String action;      // e.g. "remove", "restore", "pin"
+        private String reason;
+        private String moderatorId;
     }
 }

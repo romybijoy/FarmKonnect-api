@@ -5,7 +5,6 @@ import com.fc.postservice.dto.CommentRequest;
 import com.fc.postservice.model.Comment;
 import com.fc.postservice.service.CommentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

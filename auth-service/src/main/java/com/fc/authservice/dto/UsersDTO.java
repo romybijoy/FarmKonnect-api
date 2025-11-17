@@ -21,11 +21,11 @@ public class UsersDTO {
     private String name;
     private String city;
     private String email;
-    private String mobile_number;
+    private String mobileNumber;
     private String password;
     private Role role;
     private String image;
-    private String block_reason;
+    private String blockReason;
     private boolean enabled;
     private UserDTO ourUsers;
     private List<UserDTO> ourUsersList;

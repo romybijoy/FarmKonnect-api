@@ -38,12 +38,4 @@ public class StoryController {
         return ResponseEntity.ok(responses);
     }
 
-
-//    @GetMapping("/feed")
-//    public ResponseEntity<List<StoryResponse>> getStoriesFromFollowings(@PathVariable String email) {
-////    String email = SecurityContextHolder.getContext().getAuthentication().getName();
-//        List<StoryResponse> stories = storyService.getStoriesOfFollowings(email);
-//        return ResponseEntity.ok(stories);
-//    }
-
 }

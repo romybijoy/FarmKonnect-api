@@ -11,8 +11,6 @@ import java.util.stream.Collectors;
 public interface SavedPostRepository  extends JpaRepository<Save, UUID> {
 
     Optional<Save> findByUserIdAndPostId(UUID userId, UUID postId);
-//
-//    void deleteByIdUserIdAndIdPostId(UUID userId, UUID postId);
 
     List<Save> findByUserId(UUID userId);
 

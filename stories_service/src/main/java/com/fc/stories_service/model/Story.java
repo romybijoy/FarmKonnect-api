@@ -23,9 +23,7 @@ public class Story {
     @Lob
     @Column(columnDefinition = "TEXT")
     private String videoUrl;
-//    private String caption;
     private String type; // "image" or "video"
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
-//    private String visibility; // "public", "private", etc.
 }

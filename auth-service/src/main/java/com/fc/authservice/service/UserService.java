@@ -19,14 +19,20 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import static com.fc.authservice.config.AppConstants.USER_NOT_FOUND;
+import static com.fc.authservice.config.AppConstants.USER_NOT_FOUND_EMAIL;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class UserService {
+
+    // Logger for this class
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
 
     private final UserRepository userRepository;
@@ -60,8 +66,8 @@ public class UserService {
 
     public UsersDTO login(UsersDTO loginRequest){
         UsersDTO response = new UsersDTO();
-        var user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new UserNotFoundException("User not found"));
-        response.setBlock_reason(user.getBlock_reason());
+        var user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND));
+        response.setBlockReason(user.getBlockReason());
             if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
                 throw new PasswordMismatchException("Incorrect password");
             }
@@ -73,11 +79,6 @@ public class UserService {
                 throw new ForbiddenException("User account is disabled");
             }
 
-//            authenticationManager
-//                    .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),
-//                            loginRequest.getPassword()));
-//            var jwt = jwtUtils.generateToken(user);
-//            var refreshToken = jwtUtils.generateRefreshToken(new HashMap<>(), user);
             Optional<String> tokenOptional = authService.authenticate(loginRequest);
             String token;
             token = tokenOptional.orElse(null);
@@ -132,7 +133,7 @@ public class UserService {
             ourUser.setRole(registrationRequest.getRole());
             ourUser.setUserName(registrationRequest.getName());
             ourUser.setImage(registrationRequest.getImage());
-            ourUser.setMobile_number(registrationRequest.getMobile_number());
+            ourUser.setMobileNumber(registrationRequest.getMobileNumber());
             ourUser.setOtp(otp);
             ourUser.setOtpGeneratedTime(LocalDateTime.now());
             ourUser.setCreatedAt(LocalDateTime.now());
@@ -227,7 +228,7 @@ public class UserService {
     public UsersDTO getUsersById(UUID id) {
         UsersDTO usersDTO = new UsersDTO();
         try {
-            User usersById = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User Not found"));
+            User usersById = userRepository.findById(id).orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
 
             UserDTO user = modelMapper.map(usersById, UserDTO.class);
             usersDTO.setOurUsers(user);
@@ -275,47 +276,13 @@ public class UserService {
         return usersDTO;
     }
 
-//    public UsersDTO updateUser(UUID userId, User updatedUser) {
-//        UsersDTO usersDTO = new UsersDTO();
-//        try {
-//            Optional<User> userOptional = userRepository.findById(userId);
-//            if (userOptional.isPresent()) {
-//                User existingUser = userOptional.get();
-//                existingUser.setEmail(updatedUser.getEmail());
-//                existingUser.setUserName(updatedUser.getUserName());
-//                existingUser.setMobile_number(updatedUser.getMobile_number());
-//                existingUser.setRole(updatedUser.getRole());
-//                existingUser.setImage(updatedUser.getImage());
-//
-//                // Check if password is present in the request
-//                if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-//                    // Encode the password and update it
-//                    existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
-//                }
-//
-//                User savedUser = userRepository.save(existingUser);
-//                UserDTO user = modelMapper.map(savedUser, UserDTO.class);
-//                usersDTO.setOurUsers(user);
-//                usersDTO.setStatusCode(200);
-//                usersDTO.setMessage("User updated successfully");
-//            } else {
-//                usersDTO.setStatusCode(404);
-//                usersDTO.setMessage("User not found for update");
-//            }
-//        } catch (Exception e) {
-//            usersDTO.setStatusCode(500);
-//            usersDTO.setMessage("Error occurred while updating user: " + e.getMessage());
-//        }
-//        return usersDTO;
-//    }
-
     public UsersDTO updateUser(UUID userId, User updatedUser) {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
         existingUser.setEmail(updatedUser.getEmail());
         existingUser.setUserName(updatedUser.getUserName());
-        existingUser.setMobile_number(updatedUser.getMobile_number());
+        existingUser.setMobileNumber(updatedUser.getMobileNumber());
         existingUser.setImage(updatedUser.getImage());
         existingUser.setDescription(updatedUser.getDescription());
         existingUser.setDistrict(updatedUser.getDistrict());
@@ -329,34 +296,11 @@ public class UserService {
     }
 
 
-//    public UsersDTO getMyInfo(String email){
-//        UsersDTO usersDTO = new UsersDTO();
-//        try {
-//            Optional<User> userOptional = userRepository.findByEmail(email);
-//            if (userOptional.isPresent()) {
-//
-//                UserDTO user = modelMapper.map(userOptional.get(), UserDTO.class);
-//                usersDTO.setOurUsers(user);
-//                usersDTO.setStatusCode(200);
-//                usersDTO.setMessage("successful");
-//            } else {
-//                usersDTO.setStatusCode(404);
-//                usersDTO.setMessage("User not found");
-//            }
-//
-//        }catch (Exception e){
-//            usersDTO.setStatusCode(500);
-//            usersDTO.setMessage("Error occurred while getting user info: " + e.getMessage());
-//        }
-//        return usersDTO;
-//
-//    }
-
     public UserDTO getMyInfo(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
 
-        System.out.println("User description: " + user.getDescription());
+        logger.debug("User description: {}", user.getDescription());
 
         return modelMapper.map(user, UserDTO.class);
     }
@@ -370,8 +314,8 @@ public class UserService {
             if (userOptional.isPresent()) {
                 User existingUser = userOptional.get();
                 existingUser.setEnabled(false);
-                existingUser.setBlock_reason(req.getBlock_reason());
-                userRepository.updateBlockInfo(req.getBlock_reason(), userId);
+                existingUser.setBlockReason(req.getBlockReason());
+                userRepository.updateBlockInfo(req.getBlockReason(), userId);
                 usersDTO.setStatusCode(200);
                 usersDTO.setMessage("User blocked successfully");
             } else {
@@ -391,7 +335,7 @@ public class UserService {
 
         // Fetch user by current email
         User user = userRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new RuntimeException("User not found with this email: " + currentEmail));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_EMAIL + currentEmail));
 
         // Check OTP match and expiration
         if (!otp.equals(user.getOtp()) || Duration.between(user.getOtpGeneratedTime(), LocalDateTime.now()).toMinutes() > 5) {
@@ -407,9 +351,6 @@ public class UserService {
                 usersDTO.setMessage("Email already in use by another user.");
                 return usersDTO;
             }
-
-//            user.setEmail(newEmail); // Update email
-//            userRepository.save(user);
             usersDTO.setStatusCode(200);
             usersDTO.setMessage("Email varified successfully.");
         } else {
@@ -460,7 +401,7 @@ public class UserService {
         } else {
             // Normal verification flow
             User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
+                    .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_EMAIL + email));
 
             String otp = otpUtil.generateOtp();
 
@@ -486,11 +427,12 @@ public class UserService {
     public UsersDTO forgotPassword(String email) {
         UsersDTO usersDTO = new UsersDTO();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_EMAIL + email));
+
         try {
-            emailUtil.sendSetPasswordEmail(email);
+            emailUtil.sendSetPasswordEmail(user.getEmail());
         } catch (MessagingException e) {
-            throw new RuntimeException("Unable to send set password email please try again");
+            throw new EmailSendException("Unable to send set password email, please try again", e);
         }
 
         usersDTO.setStatusCode(200);
@@ -502,7 +444,7 @@ public class UserService {
         UsersDTO resp = new UsersDTO();
         try {
             User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
+                    .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_EMAIL + email));
 
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
@@ -520,12 +462,12 @@ public class UserService {
     }
 
     public User getUserByUsername(String username) {
-        return userRepository.findByUserName((username).describeConstable().orElseThrow(() -> new UsernameNotFoundException("User not found")));
+        return userRepository.findByUserName((username).describeConstable().orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND)));
     }
 
     public BlockStatusResponse checkBlockStatus(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new APIException("User not found", 404));
+                .orElseThrow(() -> new APIException(USER_NOT_FOUND, 404));
 
         boolean active = user.isEnabled();
         String message = active ? "User is active" : "User is blocked";
@@ -543,7 +485,7 @@ public class UserService {
                         user.getImage(),
                         user.getEmail()
                 ))
-                .collect(Collectors.toList());
+                .toList();
     }
 
 }

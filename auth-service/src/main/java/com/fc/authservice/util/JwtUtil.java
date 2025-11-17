@@ -15,16 +15,19 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Getter
 @Component
 public class JwtUtil {
 
     private final Key secretKey;
+    private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
     @Autowired
     public JwtUtil(@Value("${jwt.secret}") String secret) {
-        System.out.println("Injected Secret: " + secret);
+        logger.debug("Injected Secret: {}", secret);
         if (secret == null || secret.isEmpty()) {
             throw new IllegalStateException("JWT secret is missing or not injected!");
         }

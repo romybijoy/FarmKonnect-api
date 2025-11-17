@@ -9,9 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class FollowEventConsumer {
+
+    private static final Logger logger = LoggerFactory.getLogger(FollowEventConsumer.class);
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -20,9 +24,9 @@ public class FollowEventConsumer {
     private SimpMessagingTemplate messagingTemplate;
 
     @KafkaListener(topics = "follow-events", groupId = "notification-service")
-    public void handleFollowEvent(ConsumerRecord<String, byte[]> record) {
+    public void handleFollowEvent(ConsumerRecord<String, byte[]> messageRecord) {
         try {
-            byte[] data = record.value();
+            byte[] data = messageRecord.value();
 
             // Parse Protobuf message
             FollowEvent event = FollowEvent.parseFrom(data);
@@ -47,11 +51,10 @@ public class FollowEventConsumer {
                     notification                             // payload
             );
 
-            System.out.println("✅ Notification sent to " + event.getRecipientId());
+            logger.info("✅ Notification sent to recipientId={}", event.getRecipientId());
 
         } catch (Exception e) {
-            System.err.println("❌ Failed to process FollowEvent: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("❌ Failed to process FollowEvent: {}", e.getMessage(), e);
         }
     }
 

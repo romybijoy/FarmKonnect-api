@@ -1,317 +1,317 @@
 services:
-  api-gateway:
-    image: api-gateway
-    container_name: api-gateway
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
-    ports:
-      - "4004:4004"
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-    networks:
-      - internal
-    depends_on:
-      - auth-service
-      - post-service
-      - chat-service
-      - stories-service
-      - notification-service
-      - feed-service
-      - eureka-server
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-
-  # ---------- AUTH SERVICE ----------
-  auth-service-db:
-    image: mysql:8
-    container_name: auth-service-db
-    restart: always
-    environment:
-      MYSQL_DATABASE: auth_srvc_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "3309:3306"
-    networks:
-      - internal
-    volumes:
-      - ./auth-mysql:/var/lib/mysql
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  auth-service:
-    image: auth-service:latest
-    container_name: auth-service
-    build:
-      context: ./auth-service
-      dockerfile: Dockerfile
-    ports:
-      - "4051:4051"
-      - "9091:9091"
-    environment:
-      # Eureka client: point to the eureka-server container
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-    depends_on:
-      auth-service-db:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    restart: on-failure
-    networks:
-      - internal
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-
-  # ---------- POST SERVICE ----------
-  post-service-db:
-    image: mysql:8
-    container_name: post-service-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: post_srvc_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "3308:3306"
-    volumes:
-      - ./post-mysql:/var/lib/mysql
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - internal
-
-  post-service:
-    image: post-service:latest
-    container_name: post-service
-    build:
-      context: ./post-service
-      dockerfile: Dockerfile
-    ports:
-      - "4050:4050"
-    environment:
-      # Eureka client: point to the eureka-server container
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-    depends_on:
-      post-service-db:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    restart: on-failure
-    networks:
-      - internal
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-
-  # ---------- STORIES SERVICE ----------
-
-  stories-service-db:
-    image: mysql:8
-    container_name: stories-service-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: stories_srvc_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "5003:3306"
-    volumes:
-      - ./stories-mysql:/var/lib/mysql
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - internal
-
-  stories-service:
-    image: stories-service:latest
-    container_name: stories-service
-    build:
-      context: ./stories_service
-      dockerfile: Dockerfile
-    ports:
-      - "4053:4053"
-    environment:
-      # Eureka client: point to the eureka-server container
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-    depends_on:
-      stories-service-db:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    restart: on-failure
-    networks:
-      - internal
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-
-  # ---------- CHAT SERVICE ----------
-  chat-service-db:
-    image: mysql:8
-    container_name: chat-service-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: chat_srvc_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "5002:3306"
-    volumes:
-      - ./chat-mysql:/var/lib/mysql
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - internal
-
-  chat-service:
-    image: chat-service:latest
-    container_name: chat-service
-    build:
-      context: ./chat-service
-      dockerfile: Dockerfile
-    ports:
-      - "4052:4052"
-    environment:
-      # Eureka client: point to the eureka-server container
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-    depends_on:
-      chat-service-db:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    restart: on-failure
-    networks:
-      - internal
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-  # ---------- NOTIFICATION SERVICE ----------
-  notification-service:
-    image: notification-service:latest
-    container_name: notification-service
-    build:
-      context: ./notification-service
-      dockerfile: Dockerfile
-    ports:
-      - "4054:4054"
-    environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      # Prefer injecting the full URI via env so Spring picks it up:
-      - SPRING_DATA_MONGODB_URI=mongodb://root:password@notification-mongo:27017/notifications-db?authSource=admin
-      - SPRING_REDIS_HOST=redis
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
-    depends_on:
-          auth-service:
-            condition: service_started
-          post-service:
-            condition: service_started
-          chat-service:
-            condition: service_started
-          redis:
-            condition: service_started
-          kafka:
-            condition: service_started
-          notification-mongo:
-            condition: service_started
-    restart: on-failure
-    networks:
-        - internal
-    healthcheck:
-          # check Spring Actuator health if available; fallback to TCP check
-        test: [ "CMD-SHELL", "curl -f http://localhost:4054/actuator/health || exit 1" ]
-        interval: 20s
-        timeout: 5s
-        retries: 5
-    deploy:
-          resources:
-            limits:
-              cpus: '0.25'
-              memory: 256M
-
-        # ---------- MONGODB FOR NOTIFICATIONS ----------
-  notification-mongo:
-    image: mongo:6.0
-    container_name: notification-mongo
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: notifications-db
-    volumes:
-      - mongo-notif-data:/data/db    # or your host path:/data/db
-    ports:
-      - "27017:27017"   # optional mapping
-
-
-    #  --------- feed-service ------------------
-  feed-service:
-    build:
-      context: ./feed-service
-      dockerfile: Dockerfile
-    container_name: feed-service
-    ports:
-      - "4055:4055"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://feed-service-db:3306/feed_srvc_db?useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=good
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-    depends_on:
-      - feed-service-db
-      - eureka-server
-    networks:
-      - internal
-  feed-service-db:
-    image: mysql:8.0
-    container_name: feed-service-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: good
-      MYSQL_DATABASE: feed_srvc_db
-    ports:
-      - "3307:3306"
-    networks:
-      - internal
-
-  eureka-server:
-    build:
-      context: ./eureka-server
-      dockerfile: Dockerfile
-    container_name: eureka-server
-    image: eureka-server:latest
-    ports:
-      - "8761:8761"
-    networks:
-      - internal
+#  api-gateway:
+#    image: api-gateway
+#    container_name: api-gateway
+#    build:
+#      context: ./api-gateway
+#      dockerfile: Dockerfile
+#    ports:
+#      - "4004:4004"
+#    environment:
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#    networks:
+#      - internal
+#    depends_on:
+#      - auth-service
+#      - post-service
+#      - chat-service
+#      - stories-service
+#      - notification-service
+#      - feed-service
+#      - eureka-server
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.25'
+#          memory: 256M
+#
+#  # ---------- AUTH SERVICE ----------
+#  auth-service-db:
+#    image: mysql:8
+#    container_name: auth-service-db
+#    restart: always
+#    environment:
+#      MYSQL_DATABASE: auth_srvc_db
+#      MYSQL_USER: user
+#      MYSQL_PASSWORD: password
+#      MYSQL_ROOT_PASSWORD: root
+#    ports:
+#      - "3309:3306"
+#    networks:
+#      - internal
+#    volumes:
+#      - ./auth-mysql:/var/lib/mysql
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#
+#  auth-service:
+#    image: auth-service:latest
+#    container_name: auth-service
+#    build:
+#      context: ./auth-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "4051:4051"
+#      - "9091:9091"
+#    environment:
+#      # Eureka client: point to the eureka-server container
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#    depends_on:
+#      auth-service-db:
+#        condition: service_healthy
+#      eureka-server:
+#        condition: service_started
+#    restart: on-failure
+#    networks:
+#      - internal
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.25'
+#          memory: 256M
+#
+#  # ---------- POST SERVICE ----------
+#  post-service-db:
+#    image: mysql:8
+#    container_name: post-service-db
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: root
+#      MYSQL_DATABASE: post_srvc_db
+#      MYSQL_USER: user
+#      MYSQL_PASSWORD: password
+#    ports:
+#      - "3308:3306"
+#    volumes:
+#      - ./post-mysql:/var/lib/mysql
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - internal
+#
+#  post-service:
+#    image: post-service:latest
+#    container_name: post-service
+#    build:
+#      context: ./post-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "4050:4050"
+#    environment:
+#      # Eureka client: point to the eureka-server container
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#    depends_on:
+#      post-service-db:
+#        condition: service_healthy
+#      eureka-server:
+#        condition: service_started
+#    restart: on-failure
+#    networks:
+#      - internal
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.25'
+#          memory: 256M
+#
+#  # ---------- STORIES SERVICE ----------
+#
+#  stories-service-db:
+#    image: mysql:8
+#    container_name: stories-service-db
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: root
+#      MYSQL_DATABASE: stories_srvc_db
+#      MYSQL_USER: user
+#      MYSQL_PASSWORD: password
+#    ports:
+#      - "5003:3306"
+#    volumes:
+#      - ./stories-mysql:/var/lib/mysql
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - internal
+#
+#  stories-service:
+#    image: stories-service:latest
+#    container_name: stories-service
+#    build:
+#      context: ./stories_service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "4053:4053"
+#    environment:
+#      # Eureka client: point to the eureka-server container
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#    depends_on:
+#      stories-service-db:
+#        condition: service_healthy
+#      eureka-server:
+#        condition: service_started
+#    restart: on-failure
+#    networks:
+#      - internal
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.25'
+#          memory: 256M
+#
+#  # ---------- CHAT SERVICE ----------
+#  chat-service-db:
+#    image: mysql:8
+#    container_name: chat-service-db
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: root
+#      MYSQL_DATABASE: chat_srvc_db
+#      MYSQL_USER: user
+#      MYSQL_PASSWORD: password
+#    ports:
+#      - "5002:3306"
+#    volumes:
+#      - ./chat-mysql:/var/lib/mysql
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - internal
+#
+#  chat-service:
+#    image: chat-service:latest
+#    container_name: chat-service
+#    build:
+#      context: ./chat-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "4052:4052"
+#    environment:
+#      # Eureka client: point to the eureka-server container
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#    depends_on:
+#      chat-service-db:
+#        condition: service_healthy
+#      eureka-server:
+#        condition: service_started
+#    restart: on-failure
+#    networks:
+#      - internal
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.25'
+#          memory: 256M
+#  # ---------- NOTIFICATION SERVICE ----------
+#  notification-service:
+#    image: notification-service:latest
+#    container_name: notification-service
+#    build:
+#      context: ./notification-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "4054:4054"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=dev
+#      # Prefer injecting the full URI via env so Spring picks it up:
+#      - SPRING_DATA_MONGODB_URI=mongodb://root:password@notification-mongo:27017/notifications-db?authSource=admin
+#      - SPRING_REDIS_HOST=redis
+#      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka
+#    depends_on:
+#          auth-service:
+#            condition: service_started
+#          post-service:
+#            condition: service_started
+#          chat-service:
+#            condition: service_started
+#          redis:
+#            condition: service_started
+#          kafka:
+#            condition: service_started
+#          notification-mongo:
+#            condition: service_started
+#    restart: on-failure
+#    networks:
+#        - internal
+#    healthcheck:
+#          # check Spring Actuator health if available; fallback to TCP check
+#        test: [ "CMD-SHELL", "curl -f http://localhost:4054/actuator/health || exit 1" ]
+#        interval: 20s
+#        timeout: 5s
+#        retries: 5
+#    deploy:
+#          resources:
+#            limits:
+#              cpus: '0.25'
+#              memory: 256M
+#
+#        # ---------- MONGODB FOR NOTIFICATIONS ----------
+#  notification-mongo:
+#    image: mongo:6.0
+#    container_name: notification-mongo
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: root
+#      MONGO_INITDB_ROOT_PASSWORD: password
+#      MONGO_INITDB_DATABASE: notifications-db
+#    volumes:
+#      - mongo-notif-data:/data/db    # or your host path:/data/db
+#    ports:
+#      - "27017:27017"   # optional mapping
+#
+#
+#    #  --------- feed-service ------------------
+#  feed-service:
+#    build:
+#      context: ./feed-service
+#      dockerfile: Dockerfile
+#    container_name: feed-service
+#    ports:
+#      - "4055:4055"
+#    environment:
+#      - SPRING_DATASOURCE_URL=jdbc:mysql://feed-service-db:3306/feed_srvc_db?useSSL=false&allowPublicKeyRetrieval=true
+#      - SPRING_DATASOURCE_USERNAME=root
+#      - SPRING_DATASOURCE_PASSWORD=good
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#    depends_on:
+#      - feed-service-db
+#      - eureka-server
+#    networks:
+#      - internal
+#  feed-service-db:
+#    image: mysql:8.0
+#    container_name: feed-service-db
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: good
+#      MYSQL_DATABASE: feed_srvc_db
+#    ports:
+#      - "3307:3306"
+#    networks:
+#      - internal
+#
+#  eureka-server:
+#    build:
+#      context: ./eureka-server
+#      dockerfile: Dockerfile
+#    container_name: eureka-server
+#    image: eureka-server:latest
+#    ports:
+#      - "8761:8761"
+#    networks:
+#      - internal
 
   zookeeper:
     image: bitnami/zookeeper:latest
@@ -336,9 +336,56 @@ services:
       - "6379:6379"
     restart: always
 
-networks:
-  internal:
-    driver: bridge
+  sonarqube-db:
+    image: postgres:15
+    container_name: sonarqube-db
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data
+    # networks:
+    #   - internal
+
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: sonarqube
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      # Optional: speeds startup in dev, not for prod
+      # SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/api/system/health | grep -q 'UP'"]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+#     networks:
+#       - internal
+
+#networks:
+#  internal:
+#    driver: bridge
 volumes:
-  mongo-notif-data:
-    driver: local
+  #  mongo-notif-data:
+  #    driver: local
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_db_data:

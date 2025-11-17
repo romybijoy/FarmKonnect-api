@@ -9,11 +9,11 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 
 @Slf4j
 @Service
+@SuppressWarnings("unused")
 public class PostServiceClient {
 
     @GrpcClient("post-service")
@@ -22,7 +22,7 @@ public class PostServiceClient {
     @CircuitBreaker(name = "postServiceCB", fallbackMethod = "fallbackGetPosts")
     public List<PostMessage> getPostsByUserIds(List<UUID> userIds) {
         UserIdsRequest request = UserIdsRequest.newBuilder()
-                .addAllUserIds(userIds.stream().map(UUID::toString).collect(Collectors.toList()))
+                .addAllUserIds(userIds.stream().map(UUID::toString).toList())
                 .build();
 
         return postServiceBlockingStub.getPostsByUserIds(request).getPostsList();
@@ -92,7 +92,12 @@ public class PostServiceClient {
 
 
     private List<PostMessage> fallbackGetPosts(List<UUID> userIds, Throwable t) {
-        System.err.println("PostService down. Using fallback. Reason: " + t.getMessage());
+        // Use structured logging provided by Lombok's @Slf4j instead of printing to stderr
+        if (t != null) {
+            log.warn("PostService down. Using fallback for userIds={} - Reason: {}", userIds, t.getMessage(), t);
+        } else {
+            log.warn("PostService down. Using fallback for userIds={}", userIds);
+        }
         return Collections.emptyList(); // return safe empty feed
     }
 

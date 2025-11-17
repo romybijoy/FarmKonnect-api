@@ -30,7 +30,8 @@ public class User {
     @Column(name = "user_name", nullable = false)
     private String userName;
 
-    private String mobile_number;
+    @Column(name = "mobile_number")
+    private String mobileNumber;
 
     @Enumerated(EnumType.STRING)
     private Role role;
@@ -41,7 +42,8 @@ public class User {
 
     private String district;
 
-    private String block_reason;
+    @Column(name = "block_reason")
+    private String blockReason;
 
     private LocalDateTime createdAt;
 

@@ -31,14 +31,10 @@ public class AuthService {
     }
 
     public Optional<String> authenticate(UsersDTO loginRequestDTO) {
-        Optional<String> token = userService.findByEmail(loginRequestDTO.getEmail())
-                .filter(u -> passwordEncoder.matches(loginRequestDTO.getPassword(),
-                        u.getPassword()))
+        return userService.findByEmail(loginRequestDTO.getEmail())
+                .filter(u -> passwordEncoder.matches(loginRequestDTO.getPassword(), u.getPassword()))
                 .map(u -> jwtUtil.generateToken(u.getEmail(), u.getRole().name()));
-
-        return token;
     }
-
 
     public boolean validateToken(String token) {
         try {

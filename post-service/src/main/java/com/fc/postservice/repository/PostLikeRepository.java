@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public interface PostLikeRepository  extends JpaRepository<Like, UUID> {
-//    int countByPostIdAndLikedTrue(UUID postId);
+
     boolean existsByPostIdAndUserId(UUID postId, UUID userId);
     void deleteByPostIdAndUserId(UUID postId, UUID userId);
     long countByPostId(UUID postId);

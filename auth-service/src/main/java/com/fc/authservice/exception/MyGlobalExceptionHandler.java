@@ -41,7 +41,7 @@ public class MyGlobalExceptionHandler {
     @ExceptionHandler(APIException.class)
     public ResponseEntity<ErrorResponse> myAPIException(APIException e) {
         String message = e.getMessage();
-        int code = e.code;
+        int code = e.getCode();
 
         ErrorResponse res = new ErrorResponse(code, message, LocalDateTime.now());
         HttpStatus status;
@@ -63,7 +63,7 @@ public class MyGlobalExceptionHandler {
     }
 
     @ExceptionHandler(UserException.class)
-    public ResponseEntity<ErrorDetails> UserExceptionHandler(UserException ue, WebRequest req){
+    public ResponseEntity<ErrorDetails> userExceptionHandler(UserException ue, WebRequest req){
 
         ErrorDetails err= new ErrorDetails(ue.getMessage(),req.getDescription(false), LocalDateTime.now());
 
@@ -76,14 +76,6 @@ public class MyGlobalExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse(500, "Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-//    @ExceptionHandler(MethodArgumentNotValidException.class)
-//    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
-//        Map<String, String> errors = new HashMap<>();
-//        ex.getBindingResult().getFieldErrors().forEach(error ->
-//                errors.put(error.getField(), error.getDefaultMessage()));
-//        return ResponseEntity.badRequest().body(errors);
-//    }
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult()
@@ -95,5 +87,14 @@ public class MyGlobalExceptionHandler {
 
         ErrorResponse res = new ErrorResponse(400, errorMessage, LocalDateTime.now());
         return new ResponseEntity<>(res, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EmailSendException.class)
+    public ResponseEntity<ErrorDetails> handleEmailSendException(EmailSendException ex, WebRequest req) {
+        ErrorDetails error = new ErrorDetails(
+                ex.getMessage(),
+                req.getDescription(false)
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

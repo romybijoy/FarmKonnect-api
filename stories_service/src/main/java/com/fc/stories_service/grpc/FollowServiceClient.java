@@ -3,13 +3,11 @@ package com.fc.stories_service.grpc;
 import com.fc.authservice.grpc.FollowServiceGrpc;
 import com.fc.authservice.grpc.UserIdList;
 import com.fc.authservice.grpc.UserIdRequest;
-import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class FollowServiceClient {
@@ -22,6 +20,6 @@ public class FollowServiceClient {
         UserIdList response = followServiceStub.getFollowedUserIds(request);
         return response.getUserIdsList().stream()
                 .map(UUID::fromString)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

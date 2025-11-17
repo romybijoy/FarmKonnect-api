@@ -8,6 +8,13 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import jakarta.annotation.PostConstruct;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+
+import java.util.Map;
 
 @Component
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
@@ -15,12 +22,15 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     @Autowired
     private AuthServiceClient authServiceClient;  // You call auth microservice from here
 
-    public StompAuthChannelInterceptor() {
-        System.out.println("StompAuthChannelInterceptor loaded");
+    private static final Logger logger = LoggerFactory.getLogger(StompAuthChannelInterceptor.class);
+
+    @PostConstruct
+    public void init() {
+        logger.info("StompAuthChannelInterceptor loaded");
     }
 
     @Override
-    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    public @Nullable Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String token = accessor.getFirstNativeHeader("Authorization");
@@ -30,20 +40,25 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                 // validate token...
 
                 boolean valid = authServiceClient.validateToken(token);
-                System.out.println(valid);
+                logger.debug("Token valid: {}", valid);
                 if (!valid) {
                     throw new IllegalArgumentException("Invalid token");
                 }
-                System.out.println("Received token: " + token);
+                logger.debug("Received token: {}", token);
 
                 // You can store userId as session attribute if you want:
                 String userId = authServiceClient.getUserId(token);
-                System.out.println("Authenticated WebSocket userId: " + userId);
+                logger.debug("Authenticated WebSocket userId: {}", userId);
 
                 accessor.setUser(new StompPrincipal(userId));
-                accessor.getSessionAttributes().put("email", userId);
+                Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+                if (sessionAttributes != null) {
+                    sessionAttributes.put("email", userId);
+                } else {
+                    logger.debug("Session attributes are not available to store user email");
+                }
             } else {
-                System.out.println("Missing/invalid token, rejecting...");
+                logger.warn("Missing/invalid token, rejecting...");
                 throw new IllegalArgumentException("Missing or invalid Authorization token");
             }
 
