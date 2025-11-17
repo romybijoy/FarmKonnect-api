@@ -1,34 +1,27 @@
 package com.fc.postservice.dto.admin;
 
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+@Getter
+@Setter
+@Builder
 public class AdminPostDto {
-    public UUID postId;
-    public UUID userId;
-    public String userName;
-    public String contentPreview;
-    public String postImage;
-    public LocalDateTime createdAt;
-    public boolean isRepost;
-    public UUID originalPostId;
-    public int commentCount;
-    public int saveCount;
-    public int likeCount;
+    private UUID postId;
+    private UUID userId;
+    private String userName;
+    private String contentPreview;
+    private List<String> postImages;
+    private LocalDateTime createdAt;
+    private boolean isRepost;
+    private UUID originalPostId;
+    private int commentCount;
+    private int saveCount;
+    private int likeCount;
 
-    public AdminPostDto(UUID postId, UUID userId, String userName, String contentPreview,
-                        String postImage, LocalDateTime createdAt, boolean isRepost,
-                        UUID originalPostId, int commentCount, int saveCount, int likeCount) {
-        this.postId = postId;
-        this.userId = userId;
-        this.userName = userName;
-        this.contentPreview = contentPreview;
-        this.postImage = postImage;
-        this.createdAt = createdAt;
-        this.isRepost = isRepost;
-        this.originalPostId = originalPostId;
-        this.commentCount = commentCount;
-        this.saveCount = saveCount;
-        this.likeCount = likeCount;
-    }
 }

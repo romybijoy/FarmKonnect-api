@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -12,7 +13,7 @@ public class PostDto {
     private UUID id;
     private UUID userId;
     private String content;
-    private String postImage;
+    private List<String> postImages;
     private String userName;
     private String description;
     private String image;

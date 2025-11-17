@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +27,7 @@ public class FeedServiceImpl {
 
     public List<PostDto> getFeed(UUID userId) {
         // 1. Get followed users
-        List<UUID> followedUserIds = followServiceClient.getFollowedUserIds(userId);
+        List<UUID> followedUserIds = new ArrayList<>(followServiceClient.getFollowedUserIds(userId));
 
         // 2. Include self
         followedUserIds.add(userId);
@@ -42,7 +42,7 @@ public class FeedServiceImpl {
         return grpcPosts.stream()
                 .filter(post -> !hiddenPostIds.contains(UUID.fromString(post.getId())))
                 .map(post -> mapToDto(post, userId))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private PostDto mapToDto(PostMessage post, UUID currentUserId) {
@@ -68,7 +68,7 @@ public class FeedServiceImpl {
                 .id(UUID.fromString(post.getId()))
                 .userId(UUID.fromString(post.getUserId()))
                 .content(post.getContent())
-                .postImage(post.getImageUrl()) // fixed from getImageUrl()
+                .postImages(new ArrayList<>(post.getImageUrlsList()))// fixed from getImageUrl()
                 .createdAt(createdAt)
                 .userName(user.getName())
                 .description(user.getDescription())
@@ -91,21 +91,21 @@ public class FeedServiceImpl {
         // If repost, fetch original post (limit recursion)
         if (dto.isRepost() && dto.getOriginalPostId() != null) {
             PostMessage original = postServiceClient.getPostById(dto.getOriginalPostId());
-            dto.setOriginalPost(mapBasePost(original, currentUserId)); // shallow map
+            dto.setOriginalPost(mapBasePost(original)); // shallow map
         }
 
         return dto;
     }
 
     // Helper: shallow mapping for original posts
-    private PostDto mapBasePost(PostMessage post, UUID currentUserId) {
+    private PostDto mapBasePost(PostMessage post) {
         UserDto user = userServiceClient.getUserById(UUID.fromString(post.getUserId()));
 
         return PostDto.builder()
                 .id(UUID.fromString(post.getId()))
                 .userId(UUID.fromString(post.getUserId()))
                 .content(post.getContent())
-                .postImage(post.getImageUrl())
+                .postImages(new ArrayList<>(post.getImageUrlsList()))
                 .createdAt(LocalDateTime.parse(post.getCreatedAt()))
                 .userName(user.getName())
                 .description(user.getDescription())

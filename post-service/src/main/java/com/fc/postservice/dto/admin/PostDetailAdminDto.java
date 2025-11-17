@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -18,7 +19,7 @@ public class PostDetailAdminDto {
     private UUID userId;            // Author ID
     private String userName;        // Author name
     private String content;         // Text content
-    private String postImage;       // Attached image
+    private List<String> postImages;       // Attached image
     private String district;        // User district
     private String description;     // Additional description
     private LocalDateTime createdAt;// When post was created

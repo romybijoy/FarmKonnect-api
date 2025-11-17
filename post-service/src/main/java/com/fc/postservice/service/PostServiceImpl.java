@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -30,25 +29,46 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
     @Value("${server.port}")
     private String port;
 
+    private static final String POST_NOT_FOUND_MSG = "Post not found";
+
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final SavedPostRepository savedPostRepository;
     private final PostLikeService postLikeService;
     private final PostSaveService postSaveService;
+    private final PostService postService;
+
+//    @Override
+//    public void getPostsByUserIds(UserIdsRequest request, StreamObserver<PostListResponse> responseObserver) {
+//        log.info("Handling request on port {}", port);
+//
+//        List<UUID> userIds = request.getUserIdsList().stream()
+//                .map(UUID::fromString)
+//                .toList();
+//
+//        List<Post> posts = postRepository.findByUserIdInOrderByCreatedAtDesc(userIds);
+//
+//        List<PostMessage> grpcPosts = posts.stream()
+//                .map(this::toGrpcPost)
+//                .toList();
+//
+//        PostListResponse response = PostListResponse.newBuilder()
+//                .addAllPosts(grpcPosts)
+//                .build();
+//
+//        responseObserver.onNext(response);
+//        responseObserver.onCompleted();
+//    }
+//
 
     @Override
     public void getPostsByUserIds(UserIdsRequest request, StreamObserver<PostListResponse> responseObserver) {
-        log.info("Handling request on port {}", port);
-
         List<UUID> userIds = request.getUserIdsList().stream()
                 .map(UUID::fromString)
-                .collect(Collectors.toList());
+                .toList();
 
-        List<Post> posts = postRepository.findByUserIdInOrderByCreatedAtDesc(userIds);
-
-        List<PostMessage> grpcPosts = posts.stream()
-                .map(this::toGrpcPost)
-                .collect(Collectors.toList());
+        // All DB fetching + mapping occurs inside PostService.getPostsByUserIdsAsGrpc (transactional)
+        List<PostMessage> grpcPosts = postService.getPostsByUserIdsAsGrpc(userIds);
 
         PostListResponse response = PostListResponse.newBuilder()
                 .addAllPosts(grpcPosts)
@@ -58,8 +78,6 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         responseObserver.onCompleted();
     }
 
-
-
     private PostMessage toGrpcPost(Post post) {
         PostMessage.Builder builder = PostMessage.newBuilder()
                 .setId(post.getId().toString())
@@ -68,8 +86,8 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
                 .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
                 .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "");
 
-        if (post.getPostImage() != null) {
-            builder.setImageUrl(post.getPostImage());
+        if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
+            builder.addAllImageUrls(post.getPostImages());
         }
 
         if (post.getImage() != null) { // profilePic
@@ -84,12 +102,6 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
             if (post.getRepostedBy() != null) {
                 builder.setRepostedBy(post.getRepostedBy().toString());
             }
-//            if (post.getRepostedByName() != null) {
-//                builder.setRepostedByName(post.getRepostedByName());
-//            }
-//            if (post.getRepostedByImage() != null) {
-//                builder.setRepostedByImage(post.getRepostedByImage());
-//            }
             if (post.getRepostedAt() != null) {
                 builder.setRepostedAt(post.getRepostedAt().toString());
             }
@@ -109,7 +121,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
             // Ensure post exists
             Post post = postRepository.findById(postId)
-                    .orElseThrow(() -> new RuntimeException("Post not found"));
+                    .orElseThrow(() -> new RuntimeException(POST_NOT_FOUND_MSG));
 
             boolean liked;
 
@@ -151,7 +163,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
             UUID userId = UUID.fromString(request.getUserId());
 
             Post post = postRepository.findById(postId)
-                    .orElseThrow(() -> new RuntimeException("Post not found"));
+                    .orElseThrow(() -> new RuntimeException(POST_NOT_FOUND_MSG));
 
             boolean saved;
 
@@ -263,13 +275,18 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
     // Utility method: convert entity -> gRPC message
     private PostMessage mapToGrpc(Post post) {
-        return PostMessage.newBuilder()
+        PostMessage.Builder builder = PostMessage.newBuilder()
                 .setId(post.getId().toString())
                 .setUserId(post.getUserId().toString())
                 .setContent(post.getContent())
-                .setImageUrl(post.getPostImage())
-                .setCreatedAt(post.getCreatedAt().toString())
-                .build();
+                .setCreatedAt(post.getCreatedAt().toString());
+
+        // Handle repeated field safely
+        if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
+            builder.addAllImageUrls(post.getPostImages());
+        }
+
+        return builder.build();
     }
 
     @Override
@@ -277,7 +294,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         UUID postId = UUID.fromString(request.getPostId());
 
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new RuntimeException(POST_NOT_FOUND_MSG));
 
         PostMessage grpcPost = toGrpcPost(post);
 

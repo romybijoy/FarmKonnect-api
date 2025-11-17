@@ -30,7 +30,7 @@ message PostMessage {
   string userName = 3;
   string profilePic = 4;
   string content = 5;
-  string imageUrl = 6;
+  repeated string imageUrls = 6;
   string createdAt = 7;
   int32 likeCount = 8;
   int32 commentCount = 9;

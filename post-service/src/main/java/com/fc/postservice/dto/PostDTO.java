@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -19,7 +20,7 @@ public class PostDTO {
 
     private String image;
 
-    private String postImage;
+    private List<String> postImages;
 
     private String userName;
 

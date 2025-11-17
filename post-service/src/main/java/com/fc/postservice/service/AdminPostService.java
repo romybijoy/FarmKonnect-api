@@ -65,6 +65,12 @@ public class AdminPostService {
         return postsResponse;
     }
 
+    private static int safeLongToInt(long value) {
+        if (value > Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        if (value < Integer.MIN_VALUE) return Integer.MIN_VALUE;
+        return (int) value;
+    }
+
     public Page<AdminPostDto> listPosts(Pageable pageable) {
         Page<Post> page = postRepository.findAll(pageable);
 
@@ -80,30 +86,32 @@ public class AdminPostService {
         Map<UUID, Long> saveCounts = saveRepository.countMapByPostIds(postIds);
 
         // map Post -> AdminPostDto, using 0 when count missing
-        Page<AdminPostDto> dtoPage = page.map(p -> {
+        return page.map(p -> {
             long comments = commentCounts.getOrDefault(p.getId(), 0L);
             long likes = likeCounts.getOrDefault(p.getId(), 0L);
             long saves = saveCounts.getOrDefault(p.getId(), 0L);
 
-            String preview = p.getContent() == null ? "" :
-                    (p.getContent().length() > 200 ? p.getContent().substring(0, 200) + "..." : p.getContent());
+            // safely convert to int (be mindful of overflow)
+            int commentCount = safeLongToInt(comments);
+            int likeCount = safeLongToInt(likes);
+            int saveCount = safeLongToInt(saves);
 
-            return new AdminPostDto(
-                    p.getId(),
-                    p.getUserId(),
-                    p.getUserName(),
-                    preview,
-                    p.getPostImage(),
-                    p.getCreatedAt(),
-                    p.isRepost(),
-                    p.getOriginalPostId(),
-                    (int) comments, // if you prefer long counts, adjust DTO
-                    (int) saves,
-                    (int) likes
-            );
+            String preview = p.getContent() == null ? "" : p.getContent();
+
+            return AdminPostDto.builder()
+                    .postId(p.getId())
+                    .userId(p.getUserId())
+                    .userName(p.getUserName())
+                    .contentPreview(preview)
+                    .postImages(p.getPostImages())
+                    .createdAt(p.getCreatedAt())
+                    .isRepost(p.isRepost())
+                    .originalPostId(p.getOriginalPostId())
+                    .commentCount(commentCount)
+                    .saveCount(saveCount)
+                    .likeCount(likeCount)
+                    .build();
         });
-
-        return dtoPage;
     }
 
     public PostDetailAdminDto getPostDetail(UUID postId) {
@@ -122,7 +130,7 @@ public class AdminPostService {
         dto.setUserId(p.getUserId());
         dto.setUserName(p.getUserName());
         dto.setContent(p.getContent());
-        dto.setPostImage(p.getPostImage());
+        dto.setPostImages(p.getPostImages());
         dto.setDistrict(p.getDistrict());
         dto.setDescription(p.getDescription());
         dto.setCreatedAt(p.getCreatedAt());

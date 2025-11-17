@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +26,10 @@ public class Post {
     @Column(length = 1000)
     private String content;
 
-    private String postImage;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "post_images", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "image_url", length = 1200)
+    private List<String> postImages = new ArrayList<>();
 
     private String image; // user image
 

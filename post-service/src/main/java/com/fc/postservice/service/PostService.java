@@ -4,6 +4,7 @@ import com.fc.postservice.dto.PostDTO;
 import com.fc.postservice.dto.PostRequest;
 import com.fc.postservice.model.Post;
 import com.fc.postservice.repository.PostRepository;
+import com.postservice.PostMessage;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +13,13 @@ import org.springframework.stereotype.Service;
 import com.userproto.UserRequest;
 import com.userproto.UserResponse;
 import com.userproto.UserServiceGrpc;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class PostService {
@@ -33,7 +37,38 @@ public class PostService {
         return posts.stream().map(post -> modelMapper.map(post, PostDTO.class)).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PostMessage> getPostsByUserIdsAsGrpc(List<UUID> userIds) {
+        List<Post> posts = postRepository.findByUserIdInWithImages(userIds);
+        return posts.stream()
+                .map(this::toGrpcPost)
+                .collect(Collectors.toList());
+    }
 
+    private PostMessage toGrpcPost(Post post) {
+        PostMessage.Builder b = PostMessage.newBuilder()
+                .setId(post.getId().toString())
+                .setUserId(post.getUserId().toString())
+                .setContent(Optional.ofNullable(post.getContent()).orElse(""))
+                .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
+                .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "");
+
+        if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
+            b.addAllImageUrls(post.getPostImages());
+        }
+
+        if (post.getImage() != null) {
+            b.setProfilePic(post.getImage());
+        }
+
+        if (post.isRepost() && post.getOriginalPostId() != null) {
+            b.setIsRepost(true).setOriginalPostId(post.getOriginalPostId().toString());
+            if (post.getRepostedBy() != null) b.setRepostedBy(post.getRepostedBy().toString());
+            if (post.getRepostedAt() != null) b.setRepostedAt(post.getRepostedAt().toString());
+        }
+
+        return b.build();
+    }
 
     public Post createPost(PostRequest req) {
         // Call User Service via gRPC
@@ -54,7 +89,7 @@ public class PostService {
         post.setUserName(user.getUserName());
         post.setDescription(user.getDescription());
         post.setImage(user.getImage());
-        post.setPostImage(req.getPostImage());
+        post.setPostImages(req.getPostImages());
         post.setDistrict(user.getDistrict());
         post.setCreatedAt(LocalDateTime.now());
 
