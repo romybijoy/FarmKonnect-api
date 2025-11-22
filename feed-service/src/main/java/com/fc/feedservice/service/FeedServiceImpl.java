@@ -6,6 +6,7 @@ import com.fc.feedservice.client.UserServiceClient;
 import com.fc.feedservice.dto.PostDto;
 import com.fc.feedservice.dto.UserDto;
 import com.postservice.PostMessage;
+import com.postservice.PostStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -40,9 +41,19 @@ public class FeedServiceImpl {
 
         // 5. Convert to PostDto, filtering out hidden posts
         return grpcPosts.stream()
-                .filter(post -> !hiddenPostIds.contains(UUID.fromString(post.getId())))
+                .filter(post -> {
+                    // skip hidden
+                    if (hiddenPostIds.contains(UUID.fromString(post.getId()))) return false;
+
+                    // skip removed posts -- see helper below for two common proto shapes
+                    return !isRemoved(post);
+                })
                 .map(post -> mapToDto(post, userId))
                 .toList();
+    }
+
+    private boolean isRemoved(PostMessage post) {
+        return post != null && post.getStatus() == PostStatus.REMOVED;
     }
 
     private PostDto mapToDto(PostMessage post, UUID currentUserId) {
@@ -54,7 +65,8 @@ public class FeedServiceImpl {
         boolean savedByCurrentUser = postServiceClient.isPostSavedByUser(currentUserId, UUID.fromString(post.getId()));
 
         LocalDateTime createdAt = null;
-        if (post.getCreatedAt() != null && !post.getCreatedAt().isBlank()) {
+        post.getCreatedAt();
+        if (!post.getCreatedAt().isBlank()) {
             try {
                 createdAt = LocalDateTime.parse(post.getCreatedAt());
             } catch (DateTimeParseException e) {
@@ -64,6 +76,8 @@ public class FeedServiceImpl {
         }
 
         // Base DTO
+        post.getOriginalPostId();
+        post.getRepostedAt();
         PostDto dto = PostDto.builder()
                 .id(UUID.fromString(post.getId()))
                 .userId(UUID.fromString(post.getUserId()))
@@ -79,11 +93,11 @@ public class FeedServiceImpl {
                 .savedByCurrentUser(savedByCurrentUser)
                 .isRepost(post.getIsRepost())
                 .originalPostId(
-                        post.getOriginalPostId() != null && !post.getOriginalPostId().isBlank()
+                        !post.getOriginalPostId().isBlank()
                                 ? UUID.fromString(post.getOriginalPostId())
                                 : null)
                 .repostedAt(
-                        post.getRepostedAt() != null && !post.getRepostedAt().isBlank()
+                        !post.getRepostedAt().isBlank()
                                 ? LocalDateTime.parse(post.getRepostedAt())
                                 : null)
                 .build();

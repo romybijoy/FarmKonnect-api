@@ -39,6 +39,7 @@ message PostMessage {
   optional string repostedAt = 12;
   string repostedBy = 13;
   optional string originalPostId = 14;
+  PostStatus status = 15;
 }
 
 // NEW: LikePostRequest message
@@ -106,4 +107,15 @@ message GetLikeCountResponse {
 
 message PostIdRequest {
   string postId = 1;
+}
+
+enum PostStatus {
+  POST_STATUS_UNSPECIFIED = 0;
+  ACTIVE = 1;    // visible in feeds
+  REMOVED = 2;   // moderated/removed — feed-service should filter these out
+  HIDDEN = 3;    // hidden by owner or system
+  REPORTED = 4;
+  DRAFT = 5;
+  ARCHIVED = 6;
+  BLOCKED = 7;
 }
