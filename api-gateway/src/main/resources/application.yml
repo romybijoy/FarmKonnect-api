@@ -101,6 +101,50 @@ spring:
           filters:
             - RewritePath=/api-docs/post,/v3/api-docs
 
+        - id: api-docs-stories-route
+          uri: lb://stories-service
+          predicates:
+            - Path=/api-docs/stories
+          filters:
+            - RewritePath=/api-docs/stories,/v3/api-docs
+
+        - id: api-docs-chat-route
+          uri: lb://chat-service
+          predicates:
+             - Path=/api-docs/chat
+          filters:
+             - RewritePath=/api-docs/chat,/v3/api-docs
+
+        - id: api-docs-notification-route
+          uri: lb://notification-service
+          predicates:
+            - Path=/api-docs/notification
+          filters:
+            - RewritePath=/api-docs/notification,/v3/api-docs
+
+        - id: api-docs-feed-route
+          uri: lb://feed-service
+          predicates:
+            - Path=/api-docs/feed
+          filters:
+            - RewritePath=/api-docs/feed,/v3/api-docs
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth Service
+        url: /api-docs/users
+      - name: Post Service
+        url: /api-docs/post
+      - name: Stories Service
+        url: /api-docs/stories
+      - name: Chat Service
+        url: /api-docs/chat
+      - name: Notification Service
+        url: /api-docs/notification
+      - name: Feed Service
+        url: /api-docs/feed
+
 eureka:
   client:
     register-with-eureka: true
@@ -114,10 +158,10 @@ eureka:
 server:
   port: 4004
 
-auth:
-  service:
+#auth:
+#  service:
 #    url: http://auth-service:4051
-     url: http://localhost:4051
+#     url: http://localhost:4051
 
 logging:
   level:
