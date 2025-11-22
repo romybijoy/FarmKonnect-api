@@ -90,6 +90,7 @@ public class UserService {
             response.setStatusCode(200);
             response.setToken(token);
             response.setRole(user.getRole());
+            response.setUserId(user.getId());
             response.setName(user.getUserName());
             response.setEmail(user.getEmail());
             response.setEnabled(user.isEnabled());

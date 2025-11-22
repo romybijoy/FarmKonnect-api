@@ -1,5 +1,6 @@
 package com.fc.postservice.model;
 
+import com.fc.postservice.enums.PostStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name= "post")
@@ -49,5 +51,17 @@ public class Post {
 
     private UUID repostedBy;
     private LocalDateTime repostedAt;
+
+    // moderation fields
+    @Enumerated(EnumType.STRING)
+    private PostStatus status = PostStatus.ACTIVE;
+
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID removedBy;                // admin user ID
+
+    private Instant removedAt;             // timestamp when removed
+
+    @Column(name = "moderation_reason", columnDefinition = "TEXT")
+    private String moderationReason;
 
 }

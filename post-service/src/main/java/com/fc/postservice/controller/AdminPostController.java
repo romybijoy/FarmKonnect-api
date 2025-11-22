@@ -1,16 +1,28 @@
 package com.fc.postservice.controller;
 
+import com.fc.postservice.dto.ReportDto;
+import com.fc.postservice.dto.ReviewRequest;
 import com.fc.postservice.dto.admin.PostDetailAdminDto;
 import com.fc.postservice.dto.admin.PostResponse;
+import com.fc.postservice.enums.ReportStatus;
+import com.fc.postservice.model.Report;
 import com.fc.postservice.service.AdminPostService;
-import lombok.Getter;
-import lombok.Setter;
+import com.fc.postservice.service.ReportService;
+import org.springframework.data.domain.Pageable;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -18,9 +30,12 @@ import java.util.UUID;
 public class AdminPostController {
 
     private final AdminPostService adminPostService;
+    private final ReportService reportService;
 
-    public AdminPostController(AdminPostService adminPostService) {
+    public AdminPostController(AdminPostService adminPostService, ReportService reportService) {
+
         this.adminPostService = adminPostService;
+        this.reportService = reportService;
     }
 
     /**
@@ -51,29 +66,49 @@ public class AdminPostController {
     }
 
     /**
-     * POST /admin/posts/{id}/actions
-     * Placeholder to perform admin actions (remove/restore/pin/warn).
-     * Extend this to call moderation logic, audit logging, and event publishing.
+     * GET /admin/posts/{reports}
      */
-    @PostMapping("/{id}/actions")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void actionOnPost(@PathVariable("id") UUID id, @RequestBody AdminActionRequest req) {
-        // For now, just validate post existence and return 204.
-        // Replace with actual moderation logic (update post status, write mod log, publish event).
-        try {
-            adminPostService.getPostDetail(id); // ensures post exists
-        } catch (NoSuchElementException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
-        }
-
+    @GetMapping("/reports")
+    public Page<ReportDto> listReports(@RequestParam(defaultValue = "PENDING") String status,
+                                       Pageable pageable) {
+        return reportService.findByStatus(ReportStatus.valueOf(status), pageable)
+                .map(this::toDto);
     }
 
+    private ReportDto toDto(Report r) {
+        return new ReportDto(
+                r.getId(),
+                r.getPostId(),
+                r.getReason(),
+                r.getDetails(),
+                r.getStatus().name(),
+                r.getReporterId().toString(),
+                r.getCreatedAt().toString()
+        );
+    }
 
-    @Getter
-    @Setter// Simple DTO for admin action request (you can move to a separate file)
-    public static class AdminActionRequest {
-        private String action;      // e.g. "remove", "restore", "pin"
-        private String reason;
-        private String moderatorId;
+    @PostMapping("/reports/{id}/review")
+    public ResponseEntity<?> review(@PathVariable UUID id,
+                                    @RequestBody ReviewRequest req) {
+        Report r = reportService.reviewReport(id, req.adminId(), req.action(), req.reason());
+        return ResponseEntity.ok(Map.of("id", r.getId(), "status", r.getStatus()));
+    }
+
+    @GetMapping("/dateReports")
+    public Page<Report> getReports(
+            @RequestParam(value = "filter", required = false) String filter,
+            @RequestParam(value = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(value = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(value = "tz", required = false) String zoneId, // optional timezone like "Asia/Kolkata"
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        ZoneId zone = (zoneId != null && !zoneId.isBlank()) ? ZoneId.of(zoneId) : ZoneId.systemDefault();
+        return reportService.findByCreatedDateFilter(filter,
+                Optional.ofNullable(from),
+                Optional.ofNullable(to),
+                pageable,
+                zone);
     }
 }

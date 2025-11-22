@@ -6,6 +6,7 @@ import com.fc.authservice.enums.Role;
 import lombok.Data;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -15,6 +16,7 @@ public class UsersDTO {
     private int statusCode;
     private String error;
     private String token;
+    private UUID userId;
     private String message;
     private String refreshToken;
     private String expirationTime;
