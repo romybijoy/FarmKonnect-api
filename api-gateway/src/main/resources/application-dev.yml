@@ -1,14 +1,25 @@
 spring:
-  application:
-    name: api-gateway
-  main:
-    web-application-type: reactive
   cloud:
     gateway:
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - http://localhost:4000
+              - http://localhost:5173
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
       routes:
         - id: auth-service-route
 #          uri: http://auth-service:4051
@@ -142,9 +153,6 @@ eureka:
 
 server:
   port: 4004
-  address: 0.0.0.0
-  ssl:
-    enabled: false
 
 #auth:
 #  service:

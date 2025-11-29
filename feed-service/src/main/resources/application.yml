@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: feed-service
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 4055
+
+logging:
+  level:
+    root: INFO
+    org:
+      hibernate:
+        SQL: ERROR
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ERROR
+
+grpc:
+  server:
+    port: 9096
+
+  client:
+    post-service:
+      address: discovery:///post-service
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      default-load-balancing-policy: round_robin
+
+    auth-service:
+      address: discovery:///auth-service
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      default-load-balancing-policy: round_robin
+
+debug: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      postServiceCB:
+        slidingWindowSize: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2

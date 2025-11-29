@@ -17,6 +17,8 @@ FROM eclipse-temurin:21-jre-alpine AS runner
 
 WORKDIR /app
 
+ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx256m -XX:+UseG1GC"
+
 # Copy only the built JAR to keep the final image small
 COPY --from=builder /app/target/chat-service-0.0.1-SNAPSHOT.jar /app.jar
 

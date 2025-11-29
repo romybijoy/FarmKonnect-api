@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: eureka-server
+
+server:
+  port: 8761
+
+eureka:
+  server:
+    enable-self-preservation: true
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    tls:
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,eureka,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.netflix.eureka: INFO
+    org.springframework.cloud.netflix.eureka.server: DEBUG
+

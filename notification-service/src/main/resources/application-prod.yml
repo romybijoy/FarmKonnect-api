@@ -1,0 +1,14 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  data:
+    mongodb:
+      uri: mongodb://root:password@notification-mongo:27017/notifications-db?authSource=admin
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka
+  instance:
+    prefer-ip-address: true

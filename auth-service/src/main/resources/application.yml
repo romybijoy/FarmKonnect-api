@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: auth-service
+
+server:
+  port: 4051
+
+jwt:
+  secret: DnFG/tvGjFAfDRZvu2+qZbEQ+SSjLRsNhoXOrtYkTfw=
+
+grpc:
+  server:
+    port: 6565
+    address: 0.0.0.0
+
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG
+      hibernate:
+        validator: DEBUG
+        SQL: ERROR
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ERROR

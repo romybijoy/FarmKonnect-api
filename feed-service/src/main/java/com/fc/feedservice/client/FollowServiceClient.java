@@ -6,6 +6,7 @@ import com.authservice.grpc.FollowServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,8 +18,10 @@ public class FollowServiceClient {
 
     private final FollowServiceGrpc.FollowServiceBlockingStub followStub;
 
-    public FollowServiceClient() {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 6565) // Update port
+    public FollowServiceClient(
+            @Value("${follow.grpc.host:localhost}") String host,
+            @Value("${follow.grpc.port:6565}") int port) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext()
                 .build();
         followStub = FollowServiceGrpc.newBlockingStub(channel);

@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: post-service
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false          # prod default; dev will override
+    properties:
+      hibernate:
+        format_sql: false
+
+  kafka:
+    bootstrap-servers: localhost:9092   # will be overridden in prod
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: post-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+server:
+  port: 4050
+
+logging:
+  level:
+    root: INFO
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ERROR
+    org.springframework.kafka: INFO
+
+grpc:
+  server:
+    port: 9099
+  client:
+    auth-service:
+      address: discovery:///auth-service
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      default-load-balancing-policy: round_robin

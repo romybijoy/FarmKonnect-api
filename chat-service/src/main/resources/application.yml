@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: chat-service
+
+server:
+  port: 4052
+
+jwt:
+  secret: DnFG/tvGjFAfDRZvu2+qZbEQ+SSjLRsNhoXOrtYkTfw=
+
+logging:
+  level:
+    root: INFO
+    org:
+      hibernate:
+        SQL: ERROR
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ERROR
+
+grpc:
+  client:
+    auth-service:
+      # Using service discovery for auth-service (good for dev & prod)
+      address: discovery:///auth-service
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      default-load-balancing-policy: round_robin
+
+auth-service:
+  url: http://auth-service   # base URL; full port can be added in each profile if needed

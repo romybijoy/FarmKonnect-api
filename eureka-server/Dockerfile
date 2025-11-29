@@ -16,6 +16,9 @@ FROM eclipse-temurin:21-jre-alpine AS runner
 
 WORKDIR /app
 
+# Eureka needs more memory than other services
+ENV JAVA_TOOL_OPTIONS="-Xms256m -Xmx512m -XX:+UseG1GC"
+
 COPY --from=builder /app/target/eureka-server-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8761
