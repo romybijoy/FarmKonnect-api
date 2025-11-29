@@ -18,10 +18,6 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      # 🔧 Build ALL services (root pom)
-      - name: Build all Spring Boot services
-        run: mvn -B clean package -DskipTests
-
       # 🔥 Build Docker images
       - name: Build Docker images for all services
         run: |
