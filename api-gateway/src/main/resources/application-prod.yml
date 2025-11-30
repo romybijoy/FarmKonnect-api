@@ -9,7 +9,8 @@ spring:
         corsConfigurations:
           '[/**]':
             allowedOrigins:
-              - http://65.0.3.105
+              - https://farmkonnect.online
+              - https://www.farmkonnect.online
             allowedMethods:
               - GET
               - POST
