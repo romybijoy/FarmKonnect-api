@@ -30,3 +30,8 @@ eureka:
 
 auth-service:
   url: http://auth-service:4051
+
+chat:
+  allowed-origins:
+    - "https://farmkonnect.online"
+    - "https://www.farmkonnect.online"
