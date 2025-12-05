@@ -15,7 +15,7 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         http
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/api/chat/chat-ws/**").permitAll()
+                        .pathMatchers("/chat-ws/**").permitAll()
                         .anyExchange().permitAll())
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(Customizer.withDefaults());

@@ -14,7 +14,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 
-    @Value("${chat.allowed-origins}")
+    @Value("${chat.allowed-origins:http://localhost:5173,https://farmkonnect.online,https://www.farmkonnect.online}")
     private String[] allowedOrigins;
 
     @Autowired
@@ -35,7 +35,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/chat-ws")
-                .setAllowedOriginPatterns("*")
                 .setAllowedOrigins(allowedOrigins)
                 .withSockJS();
     }

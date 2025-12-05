@@ -6,11 +6,14 @@ spring:
           enabled: true
           lower-case-service-id: true
       globalcors:
+        add-to-simple-url-handler-mapping: true
         corsConfigurations:
-          '[/**]':
+          '[/user/**]':
             allowedOrigins:
               - https://farmkonnect.online
               - https://www.farmkonnect.online
+              - http://localhost:5173
+              - https://admin.farmkonnect.online
             allowedMethods:
               - GET
               - POST
@@ -20,6 +23,23 @@ spring:
             allowedHeaders:
               - "*"
             allowCredentials: true
+
+          '[/api/**]':
+            allowedOrigins:
+              - https://farmkonnect.online
+              - https://www.farmkonnect.online
+              - http://localhost:5173
+              - https://admin.farmkonnect.online
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
       routes:
         - id: auth-service-route
           uri: lb://auth-service
@@ -35,14 +55,14 @@ spring:
           filters:
             - StripPrefix=2
             - JwtValidation
-          # Route for /api/story/** to stories-service
+
         - id: story-service-route
           uri: lb://stories-service
           predicates:
             - Path=/api/stories/**
           filters:
-                - StripPrefix=2
-                - JwtValidation
+            - StripPrefix=2
+            - JwtValidation
 
         - id: chat-service-route
           uri: lb://chat-service
@@ -51,13 +71,21 @@ spring:
           filters:
             - JwtValidation
             - RewritePath=/api/chat/(?<segment>.*), /$\{segment}
+
+        - id: chat-ws-route
+          uri: lb://chat-service
+          predicates:
+            - Path=/chat-ws/**
+          filters: [ ]
+
         - id: notification-service-route
           uri: lb://notification-service
           predicates:
-              - Path=/api/notifications/**
+            - Path=/api/notifications/**
           filters:
-              - StripPrefix=2
-              - JwtValidation
+            - StripPrefix=2
+            - JwtValidation
+
         - id: feed-service-route
           uri: lb://feed-service
           predicates:
@@ -65,6 +93,7 @@ spring:
           filters:
             - StripPrefix=2
             - JwtValidation
+
         - id: api-docs-users-route
           uri: lb://auth-service
           predicates:
@@ -89,9 +118,9 @@ spring:
         - id: api-docs-chat-route
           uri: lb://chat-service
           predicates:
-             - Path=/api-docs/chat
+            - Path=/api-docs/chat
           filters:
-             - RewritePath=/api-docs/chat,/v3/api-docs
+            - RewritePath=/api-docs/chat,/v3/api-docs
 
         - id: api-docs-notification-route
           uri: lb://notification-service

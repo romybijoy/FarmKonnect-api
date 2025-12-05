@@ -33,5 +33,6 @@ auth-service:
 
 chat:
   allowed-origins:
-    - "https://farmkonnect.online"
-    - "https://www.farmkonnect.online"
+    - http://localhost:5173
+    - https://farmkonnect.online
+    - https://www.farmkonnect.online

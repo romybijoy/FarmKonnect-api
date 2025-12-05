@@ -30,3 +30,8 @@ grpc:
 
 auth-service:
   url: http://auth-service   # base URL; full port can be added in each profile if needed
+
+chat:
+  allowed-origins:
+    - https://farmkonnect.online
+    - https://www.farmkonnect.online
