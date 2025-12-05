@@ -1,6 +1,7 @@
 package com.fc.authservice.controller;
 
 import com.fc.authservice.dto.OtpVerificationRequest;
+import com.fc.authservice.dto.SocialLoginRequest;
 import com.fc.authservice.dto.UsersDTO;
 import com.fc.authservice.service.AuthService;
 import com.fc.authservice.service.UserService;
@@ -38,6 +39,13 @@ public class AuthController {
     @Operation(summary = "Generate token on user login")
     public ResponseEntity<UsersDTO> login(@RequestBody UsersDTO req){
         UsersDTO response = userService.login(req);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/auth/social-login")
+    @Operation(summary = "Login or register user via social provider (Google/Facebook)")
+    public ResponseEntity<UsersDTO> socialLogin(@RequestBody SocialLoginRequest request) {
+        UsersDTO response = userService.socialLogin(request);
         return ResponseEntity.ok(response);
     }
 

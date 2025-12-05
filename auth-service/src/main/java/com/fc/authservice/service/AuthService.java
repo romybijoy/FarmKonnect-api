@@ -1,6 +1,7 @@
 package com.fc.authservice.service;
 
 import com.fc.authservice.dto.UsersDTO;
+import com.fc.authservice.model.User;
 import com.fc.authservice.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -54,5 +55,14 @@ public class AuthService {
                 .getPayload();
 
         return claims.getSubject(); // Or claims.get("userId")
+    }
+
+    public Optional<String> generateTokenForUser(User user) {
+        // You may use Spring Security UserDetails, or directly user
+        // Here is a simple example:
+
+        String username = user.getEmail(); // or user.getId().toString()
+        String token = jwtUtil.generateToken(username, user.getRole().name());
+        return Optional.of(token);
     }
 }

@@ -2,6 +2,7 @@ package com.fc.authservice.service;
 
 import com.fc.authservice.dto.*;
 import com.fc.authservice.enums.Role;
+import com.fc.authservice.enums.SocialProvider;
 import com.fc.authservice.exception.*;
 import com.fc.authservice.model.User;
 import com.fc.authservice.repository.UserRepository;
@@ -100,6 +101,98 @@ public class UserService {
         return response;
     }
 
+    public UsersDTO socialLogin(SocialLoginRequest loginRequest) {
+        // 1️⃣ Basic validation
+        if (loginRequest.getEmail() == null || loginRequest.getEmail().isBlank()) {
+            throw new BadRequestException("Email must not be null for social login");
+        }
+
+        // 2️⃣ Find existing user or create new one
+        User user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseGet(() -> createSocialUser(loginRequest));
+
+        if (!user.isEnabled()) {
+            throw new ForbiddenException("User account is disabled");
+        }
+
+        // 3️⃣ Optionally update name/avatar/provider IDs if changed
+        boolean updated = false;
+
+        if (loginRequest.getName() != null && !loginRequest.getName().isBlank()
+                && !loginRequest.getName().equals(user.getUserName())) {
+            user.setUserName(loginRequest.getName());
+            updated = true;
+        }
+
+        if (loginRequest.getAvatar() != null && !loginRequest.getAvatar().isBlank()) {
+            user.setAvatarUrl(loginRequest.getAvatar());
+            updated = true;
+        }
+
+        if (loginRequest.getProvider() == SocialProvider.GOOGLE &&
+                loginRequest.getProviderUserId() != null &&
+                (user.getGoogleId() == null || !user.getGoogleId().equals(loginRequest.getProviderUserId()))) {
+            user.setGoogleId(loginRequest.getProviderUserId());
+            updated = true;
+        }
+
+        if (loginRequest.getProvider() == SocialProvider.FACEBOOK &&
+                loginRequest.getProviderUserId() != null &&
+                (user.getFacebookId() == null || !user.getFacebookId().equals(loginRequest.getProviderUserId()))) {
+            user.setFacebookId(loginRequest.getProviderUserId());
+            updated = true;
+        }
+
+        if (updated) {
+            userRepository.save(user);
+        }
+
+        // 4️⃣ Generate JWT for this user (no password in social login)
+        Optional<String> tokenOptional = authService.generateTokenForUser(user);
+        String token = tokenOptional.orElse(null);
+
+        UsersDTO response = new UsersDTO();
+        response.setToken(token);
+
+        if (tokenOptional.isEmpty()) {
+            // optional: set message or status
+            return response;
+        }
+
+        // 5️⃣ Build UsersDTO exactly like your normal login()
+        response.setStatusCode(200);
+        response.setRole(user.getRole());
+        response.setUserId(user.getId());
+        response.setName(user.getUserName());
+        response.setEmail(user.getEmail());
+        response.setEnabled(user.isEnabled());
+        response.setExpirationTime("24Hrs");
+        response.setMessage("Successfully Logged In via " + loginRequest.getProvider().name());
+
+        return response;
+    }
+
+    private User createSocialUser(SocialLoginRequest loginRequest) {
+        User user = new User();
+        user.setEmail(loginRequest.getEmail());
+        user.setUserName(loginRequest.getName());
+        user.setAvatarUrl(loginRequest.getAvatar());
+        user.setEnabled(true);
+        user.setSocialUser(true);
+        user.setRole(Role.USER); // or your default role
+
+        if (loginRequest.getProvider() == SocialProvider.GOOGLE) {
+            user.setGoogleId(loginRequest.getProviderUserId());
+        } else if (loginRequest.getProvider() == SocialProvider.FACEBOOK) {
+            user.setFacebookId(loginRequest.getProviderUserId());
+        }
+
+        // set dummy password to satisfy NOT NULL constraint
+        String randomPassword = UUID.randomUUID().toString();
+        user.setPassword(passwordEncoder.encode(randomPassword));
+
+        return userRepository.save(user);
+    }
 
 
     public User findUserById(UUID userId) throws UserException {

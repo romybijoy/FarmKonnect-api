@@ -53,4 +53,9 @@ public class User {
 
     private LocalDateTime otpGeneratedTime;
 
+    private String googleId;
+    private String facebookId;
+    private String avatarUrl;
+    private boolean socialUser;
+
 }
