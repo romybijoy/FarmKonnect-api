@@ -7,6 +7,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_APPLICATION_NAME=api-gateway
     depends_on:
       - auth-service
       - post-service
@@ -20,6 +21,8 @@ services:
         limits:
           cpus: '0.25'
           memory: 256M
+    volumes:
+      - ./logs/api-gateway:/logs
     networks:
       - internal
 
@@ -56,6 +59,7 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - MAIL_USER=romybijoy@gmail.com
       - MAIL_PASS=awjhmqsrqpprfpih
+      - SPRING_APPLICATION_NAME=auth-service
     depends_on:
       auth-service-db:
         condition: service_healthy
@@ -67,6 +71,8 @@ services:
         limits:
           cpus: '0.25'
           memory: 256M
+    volumes:
+      - ./logs/auth-service:/logs
     networks:
       - internal
 
@@ -101,6 +107,7 @@ services:
       # Eureka client: point to the eureka-server container
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_APPLICATION_NAME=post-service
     depends_on:
       post-service-db:
         condition: service_healthy
@@ -112,6 +119,8 @@ services:
         limits:
           cpus: '0.25'
           memory: 256M
+    volumes:
+      - ./logs/post-service:/logs
     networks:
       - internal
 
@@ -147,6 +156,7 @@ services:
       # Eureka client: point to the eureka-server container
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_APPLICATION_NAME=stories-service
     depends_on:
       stories-service-db:
         condition: service_healthy
@@ -158,6 +168,8 @@ services:
         limits:
           cpus: '0.25'
           memory: 256M
+    volumes:
+      - ./logs/stories-service:/logs
     networks:
       - internal
 
@@ -192,6 +204,7 @@ services:
       # Eureka client: point to the eureka-server container
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_APPLICATION_NAME=chat-service
     depends_on:
       chat-service-db:
         condition: service_healthy
@@ -203,6 +216,8 @@ services:
         limits:
           cpus: '0.25'
           memory: 256M
+    volumes:
+      - ./logs/chat-service:/logs
     networks:
       - internal
   # ---------- NOTIFICATION SERVICE ----------
@@ -218,6 +233,7 @@ services:
       - SPRING_REDIS_HOST=redis
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_APPLICATION_NAME=notification-service
     depends_on:
           auth-service:
             condition: service_started
@@ -243,6 +259,8 @@ services:
             limits:
               cpus: '0.25'
               memory: 256M
+    volumes:
+      - ./logs/notification-service:/logs
     networks:
       - internal
 
@@ -270,9 +288,12 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_APPLICATION_NAME=feed-service
     depends_on:
       - feed-service-db
       - eureka-server
+    volumes:
+      - ./logs/feed-service:/logs
     networks:
       - internal
 
@@ -295,6 +316,9 @@ services:
       - "8761:8761"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_APPLICATION_NAME=eureka-server
+    volumes:
+      - ./logs/eureka-server:/logs
     networks:
       - internal
 
