@@ -32,6 +32,10 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     @Override
     public @Nullable Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+        // Skip non-STOMP messages (SockJS INFO, handshake, heartbeats)
+        if (accessor.getCommand() == null) {
+            return message;
+        }
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String token = accessor.getFirstNativeHeader("Authorization");
 
