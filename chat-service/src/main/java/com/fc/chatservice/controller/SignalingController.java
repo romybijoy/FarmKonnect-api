@@ -30,8 +30,7 @@ public class SignalingController {
         logger.info("[Signal Received] callType: {}", message.getCallType());
 
         String targetUserId = switch (message.getType()) {
-            case "offer" -> message.getReceiverId();
-            case "answer" -> message.getCallerId();
+            case "offer", "answer" -> message.getReceiverId();
             case "ice" -> message.getTargetId();
             default -> "";
         };
