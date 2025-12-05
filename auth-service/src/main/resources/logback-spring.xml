@@ -1,29 +1,31 @@
 <configuration scan="true">
 
-    <!-- Get the service name from Spring -->
+    <!-- Get service name from Spring -->
     <springProperty name="APP_NAME" source="spring.application.name" />
 
-    <!-- All logs will be under /logs/{service-name} -->
-    <property name="LOG_PATH" value="/logs/${APP_NAME}" />
+    <!-- All logs go under /logs inside container -->
+    <property name="LOG_PATH" value="/logs" />
 
-    <!-- Console logs (for docker logs) -->
+    <!-- Console logs -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- ERROR logs only -->
+    <!-- ERROR logs: one folder per service -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/error.log</file>
+
+        <!-- IMPORTANT: only one ${APP_NAME} here -->
+        <file>${LOG_PATH}/${APP_NAME}/error.log</file>
 
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
         </filter>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- rotate daily -->
-            <fileNamePattern>${LOG_PATH}/error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- Rotate daily, still only one ${APP_NAME} -->
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}/error.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>7</maxHistory>
         </rollingPolicy>
 
@@ -32,7 +34,6 @@
         </encoder>
     </appender>
 
-    <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="ERROR_FILE" />
