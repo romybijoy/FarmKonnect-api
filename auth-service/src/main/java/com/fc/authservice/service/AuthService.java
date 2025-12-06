@@ -60,20 +60,12 @@ public class AuthService {
     public Optional<String> authenticate(UsersDTO loginRequestDTO) {
         log.info("Authentication attempt for email={}", loginRequestDTO.getEmail());
         return userService.findByEmail(loginRequestDTO.getEmail())
-                .filter(u -> passwordMatches(loginRequestDTO.getPassword(), u.getPassword()))
+                .filter(u -> passwordEncoder.matches(loginRequestDTO.getPassword(), u.getPassword()))
                 .map(u -> {
                     String token = jwtUtil.generateToken(u.getEmail(), u.getRole().name());
                     log.info("Authentication successful for email={}", u.getEmail());
                     return token;
                 });
-    }
-
-    private boolean passwordMatches(String rawPassword, String encodedPassword) {
-        boolean match = passwordEncoder.matches(rawPassword, encodedPassword);
-        if (!match) {
-            log.warn("Password mismatch for login attempt");
-        }
-        return match;
     }
 
     /**
