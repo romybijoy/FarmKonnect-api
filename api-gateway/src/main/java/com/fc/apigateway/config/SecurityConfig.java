@@ -7,6 +7,14 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
+
+/**
+ * Security configuration for API Gateway using Spring WebFlux Security.
+ * Configures public endpoints and disables CSRF for gateway routing.
+ *
+ * @author Romy Rose Jimmy
+ * @since 2025
+ */
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {

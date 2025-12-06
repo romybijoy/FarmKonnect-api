@@ -5,6 +5,7 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
@@ -21,12 +22,13 @@ public class JwtValidationGatewayFilterFactory extends AbstractGatewayFilterFact
 
     @Override
     public GatewayFilter apply(Object config) {
+        AntPathMatcher matcher = new AntPathMatcher();
         return (exchange, chain) -> {
             String token = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
             String path = exchange.getRequest().getURI().getPath();
 
             // Skip validation for WebSocket endpoint (if applicable)
-            if (path.startsWith("/chat-ws") || path.startsWith("/api/post/admin")) {
+            if (path.startsWith("/chat-ws") || matcher.match("/api/post/admin/**", path)) {
                 return chain.filter(exchange);
             }
 
