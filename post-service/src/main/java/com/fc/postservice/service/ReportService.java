@@ -7,6 +7,7 @@ import com.fc.postservice.repository.PostRepository;
 import com.fc.postservice.repository.ReportRepository;
 import com.fc.postservice.messaging.KafkaPublisher;
 import com.fc.postservice.specification.ReportSpecification;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -16,12 +17,10 @@ import org.springframework.data.domain.Pageable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
+@Slf4j
 public class ReportService {
 
     private final ReportRepository reportRepository;
@@ -39,8 +38,16 @@ public class ReportService {
         this.kafkaPublisher = kafkaPublisher;
     }
 
+    // -------------------------------------------------------------------------
+    // CREATE REPORT
+    // -------------------------------------------------------------------------
+    /**
+     * Creates a report and publishes notification events.
+     */
     public Report createReport(UUID postId, UUID reporterId, String reason, String details) {
-        // dedupe: avoid duplicate PENDING reports by same reporter for same post - optional
+
+        log.info("Creating report | postId={}, reporterId={}, reason={}", postId, reporterId, reason);
+
         Report r = new Report();
         r.setPostId(postId);
         r.setReporterId(reporterId);
@@ -58,16 +65,27 @@ public class ReportService {
                 "reporterId", r.getReporterId(),
                 "createdAt", r.getCreatedAt().toString()
         ));
+
+        log.info("Report created successfully | reportId={}, postId={}", r.getId(), r.getPostId());
         return r;
     }
 
+    // -------------------------------------------------------------------------
+    // REVIEW REPORT
+    // -------------------------------------------------------------------------
+    /**
+     * Reviews a report with actions like REMOVE_POST or DISMISS.
+     */
     @Transactional
     public Report reviewReport(UUID reportId, UUID adminId, String action, String actionReason) {
+
+        log.info("Reviewing report | reportId={}, adminId={}, action={}", reportId, adminId, action);
+
         Report r = reportRepository.findById(reportId)
-                .orElseThrow(() -> new IllegalArgumentException("Report not found: " + reportId));
+                .orElseThrow(() -> new NoSuchElementException("Report not found: " + reportId));
 
         if (r.getStatus() != ReportStatus.PENDING) {
-            // idempotency: return existing state or throw; here we throw
+            log.warn("Attempt to re-review already processed report | reportId={}", reportId);
             throw new IllegalStateException("Report already reviewed");
         }
 
@@ -117,7 +135,9 @@ public class ReportService {
         return r;
     }
 
-    // helper: findByStatus, findById etc - implement as needed
+    // -------------------------------------------------------------------------
+    // BASIC QUERIES
+    // -------------------------------------------------------------------------
 
     public Page<Report> findByStatus(ReportStatus status, Pageable pageable) {
         return reportRepository.findByStatus(status, pageable);
@@ -135,51 +155,61 @@ public class ReportService {
         return reportRepository.countByStatus(status);
     }
 
-    public Page<Report> findByCreatedDateFilter(String filter,
-                                                Optional<Instant> fromOpt,
-                                                Optional<Instant> toOpt,
-                                                Pageable pageable,
-                                                ZoneId zone) {
-        // compute range based on filter
-        Instant now = Instant.now();
+    // -------------------------------------------------------------------------
+    // DATE FILTER QUERY (Daily, Weekly, Monthly, Custom)
+    // -------------------------------------------------------------------------
+    /**
+     * Filters reports based on a preset or custom date range.
+     */
+    public Page<Report> findByCreatedDateFilter(
+            String filter,
+            Optional<Instant> fromOpt,
+            Optional<Instant> toOpt,
+            Pageable pageable,
+            ZoneId zone
+    ) {
+
+        log.info("Filtering reports | filter={}, from={}, to={}", filter, fromOpt, toOpt);
+
         Instant from = null;
         Instant to = null;
 
         switch (filter != null ? filter.toLowerCase() : "") {
-            case "daily":
-                // today in given zone: from startOfDay to startOfNextDay
+
+            case "daily" -> {
                 LocalDate today = LocalDate.now(zone);
                 from = today.atStartOfDay(zone).toInstant();
                 to = today.plusDays(1).atStartOfDay(zone).toInstant();
-                break;
-            case "weekly":
-                // last 7 days including today: from (today-6) 00:00 to next day 00:00
-                LocalDate endDay = LocalDate.now(zone).plusDays(1);
-                from = LocalDate.now(zone).minusDays(6).atStartOfDay(zone).toInstant();
-                to = endDay.atStartOfDay(zone).toInstant();
-                break;
-            case "monthly":
-                // last 30 days
-                from = LocalDate.now(zone).minusDays(29).atStartOfDay(zone).toInstant();
-                to = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant();
-                break;
-            case "custom":
-            case "from-to":
-                if (fromOpt.isPresent() || toOpt.isPresent()) {
-                    from = fromOpt.orElse(null);
-                    to = toOpt.orElse(null);
-                }
-                break;
-            default:
+            }
+
+            case "weekly" -> {
+                LocalDate start = LocalDate.now(zone).minusDays(6);
+                LocalDate end = LocalDate.now(zone).plusDays(1);
+                from = start.atStartOfDay(zone).toInstant();
+                to = end.atStartOfDay(zone).toInstant();
+            }
+
+            case "monthly" -> {
+                LocalDate start = LocalDate.now(zone).minusDays(29);
+                LocalDate end = LocalDate.now(zone).plusDays(1);
+                from = start.atStartOfDay(zone).toInstant();
+                to = end.atStartOfDay(zone).toInstant();
+            }
+
+            case "custom", "from-to" -> {
+                from = fromOpt.orElse(null);
+                to = toOpt.orElse(null);
+            }
+
+            default -> {
                 // no filter -> return all
-                break;
+                from = fromOpt.orElse(null);
+                to = toOpt.orElse(null);
+            }
         }
 
-        // If caller passed explicit from/to (higher priority for 'custom'):
-        if (fromOpt.isPresent()) from = fromOpt.get();
-        if (toOpt.isPresent()) to = toOpt.get();
-
         Specification<Report> spec = null;
+
         if (from != null || to != null) {
             spec = ReportSpecification.createdBetween(from, to);
         }

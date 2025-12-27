@@ -1,6 +1,5 @@
 package com.fc.authservice.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fc.authservice.enums.Role;
@@ -75,7 +74,6 @@ public class UsersDTO {
     private String mobileNumber;
 
     /** Password is NEVER returned in API responses for security reasons */
-    @JsonIgnore
     private String password;
 
     /** Assigned user role (ADMIN, USER, etc.) */

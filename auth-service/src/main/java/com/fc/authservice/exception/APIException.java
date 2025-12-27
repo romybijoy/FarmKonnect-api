@@ -29,15 +29,6 @@ public class APIException extends RuntimeException {
 
     private final int code;
 
-    public APIException() {
-        super();
-        this.code = 0;
-    }
-    public APIException(String message) {
-        super(message);
-        this.code = 0;
-    }
-
     /**
      * Creates an APIException with both an error message and a custom error code.
      *

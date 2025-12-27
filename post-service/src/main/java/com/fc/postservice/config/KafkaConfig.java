@@ -12,12 +12,29 @@ import org.springframework.kafka.core.ProducerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Kafka producer configuration for Post Service.
+ * Defines:
+ *  - ProducerFactory for creating Kafka producers
+ *  - KafkaTemplate for sending Kafka messages
+ * Configured for high reliability with recommended defaults such as:
+ *  - acks=all
+ *  - retries
+ *  - batching and linger settings
+ */
 @Configuration
 public class KafkaConfig {
 
+    /** Kafka broker address (externalized via application.yml) */
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
+    /**
+     * Creates a ProducerFactory to construct Kafka producers with
+     * string-based key/value serialization.
+     *
+     * @return configured ProducerFactory instance
+     */
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
@@ -36,6 +53,11 @@ public class KafkaConfig {
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
+    /**
+     * Creates a KafkaTemplate for sending messages to Kafka topics.
+     *
+     * @return KafkaTemplate bean for String key/value messages
+     */
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());

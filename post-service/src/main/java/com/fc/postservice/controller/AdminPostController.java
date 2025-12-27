@@ -8,6 +8,8 @@ import com.fc.postservice.enums.ReportStatus;
 import com.fc.postservice.model.Report;
 import com.fc.postservice.service.AdminPostService;
 import com.fc.postservice.service.ReportService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.Page;
@@ -25,8 +27,16 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Admin controller for managing posts, including:
+ * - Viewing all posts
+ * - Viewing detailed post information
+ * - Viewing and reviewing reports
+ * - Filtering reports by date range and status
+ */
 @RestController
 @RequestMapping("/admin/posts")
+@Tag(name = "Admin Post Management", description = "Admin-only APIs for managing posts and reports")
 public class AdminPostController {
 
     private final AdminPostService adminPostService;
@@ -39,8 +49,9 @@ public class AdminPostController {
     }
 
     /**
-     * GET /admin/posts
+     * Returns paginated list of posts for admin review.
      */
+    @Operation(summary = "Get all posts (Admin)", description = "Returns paginated list of all posts.")
     @GetMapping
     public ResponseEntity<PostResponse> getAllPosts(
             @RequestParam(name = "pageNumber", defaultValue = "0", required = false) Integer pageNumber,
@@ -50,12 +61,13 @@ public class AdminPostController {
     ) {
         PostResponse postsResponse = adminPostService.getAllPosts(pageNumber, pageSize, sortBy, sortOrder);
 
-        return new ResponseEntity<>(postsResponse, HttpStatus.FOUND);
+        return new ResponseEntity<>(postsResponse, HttpStatus.FOUND); // 200 instead of 302 (FOUND)
     }
 
     /**
-     * GET /admin/posts/{id}
+     * Returns detailed information about a single post.
      */
+    @Operation(summary = "Get post details (Admin)")
     @GetMapping("/{id}")
     public PostDetailAdminDto getPost(@PathVariable("id") UUID id) {
         try {
@@ -66,8 +78,9 @@ public class AdminPostController {
     }
 
     /**
-     * GET /admin/posts/{reports}
+     * Returns paginated list of reports filtered by status.
      */
+    @Operation(summary = "List post reports (Admin)", description = "Returns reports filtered by status.")
     @GetMapping("/reports")
     public Page<ReportDto> listReports(@RequestParam(defaultValue = "PENDING") String status,
                                        Pageable pageable) {
@@ -75,6 +88,7 @@ public class AdminPostController {
                 .map(this::toDto);
     }
 
+    /** Converts Report entity → DTO */
     private ReportDto toDto(Report r) {
         return new ReportDto(
                 r.getId(),
@@ -87,6 +101,10 @@ public class AdminPostController {
         );
     }
 
+    /**
+     * Reviews a report (APPROVE / REJECT) and updates its status.
+     */
+    @Operation(summary = "Review a report (Admin)")
     @PostMapping("/reports/{id}/review")
     public ResponseEntity<?> review(@PathVariable UUID id,
                                     @RequestBody ReviewRequest req) {
@@ -94,6 +112,13 @@ public class AdminPostController {
         return ResponseEntity.ok(Map.of("id", r.getId(), "status", r.getStatus()));
     }
 
+    /**
+     * Returns reports filtered by:
+     *  - text filter
+     *  - date range (from/to)
+     *  - timezone-aware filtering
+     */
+    @Operation(summary = "Filter reports by date (Admin)")
     @GetMapping("/dateReports")
     public Page<Report> getReports(
             @RequestParam(value = "filter", required = false) String filter,

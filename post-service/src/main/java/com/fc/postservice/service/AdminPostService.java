@@ -9,6 +9,7 @@ import com.fc.postservice.repository.CommentRepository;
 import com.fc.postservice.repository.PostLikeRepository;
 import com.fc.postservice.repository.PostRepository;
 import com.fc.postservice.repository.SavedPostRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,11 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Admin service for managing, listing, and inspecting posts.
+ * Includes post counts for comments, likes, and saves, along with pagination.
+ */
+@Slf4j
 @Service
 public class AdminPostService {
 
@@ -36,7 +42,13 @@ public class AdminPostService {
         this.saveRepository = saveRepository;
     }
 
+    /**
+     * Fetch paginated list of posts with aggregated statistics.
+     */
     public PostResponse getAllPosts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+
+        log.info("Admin fetching all posts | page={}, size={}, sortBy={}, sortOrder={}",
+                pageNumber, pageSize, sortBy, sortOrder);
 
         Sort sort = sortOrder.equalsIgnoreCase("asc")
                 ? Sort.by(Sort.Direction.ASC, sortBy)
@@ -46,32 +58,42 @@ public class AdminPostService {
 
         Page<AdminPostDto> pagePosts = listPosts(pageable);
 
-        List<AdminPostDto> posts = pagePosts.getContent();
-
-        if (posts.isEmpty()) {
+        if (pagePosts.isEmpty()) {
+            log.warn("Admin post fetch returned no posts");
             throw new APIException("No posts found", 404);
         }
 
-        PostResponse postsResponse = new PostResponse();
-        postsResponse.setMessage("Posts fetched successfully");
-        postsResponse.setStatusCode(302);
-        postsResponse.setContent(posts);
-        postsResponse.setPageNumber(pagePosts.getNumber());
-        postsResponse.setPageSize(pagePosts.getSize());
-        postsResponse.setTotalElements(pagePosts.getTotalElements());
-        postsResponse.setTotalPages(pagePosts.getTotalPages());
-        postsResponse.setLastPage(pagePosts.isLast());
+        PostResponse response = new PostResponse();
+        response.setMessage("Posts fetched successfully");
+        response.setStatusCode(302);
+        response.setContent(pagePosts.getContent());
+        response.setPageNumber(pagePosts.getNumber());
+        response.setPageSize(pagePosts.getSize());
+        response.setTotalElements(pagePosts.getTotalElements());
+        response.setTotalPages(pagePosts.getTotalPages());
+        response.setLastPage(pagePosts.isLast());
 
-        return postsResponse;
+        log.info("Admin post fetch successful | totalElements={}", pagePosts.getTotalElements());
+
+        return response;
     }
 
+    /**
+     * Prevent overflow when converting long → int.
+     */
     private static int safeLongToInt(long value) {
         if (value > Integer.MAX_VALUE) return Integer.MAX_VALUE;
         if (value < Integer.MIN_VALUE) return Integer.MIN_VALUE;
         return (int) value;
     }
 
+    /**
+     * Internal method for mapping posts to AdminPostDto with metrics.
+     */
     public Page<AdminPostDto> listPosts(Pageable pageable) {
+
+        log.debug("Fetching posts with pageable: {}", pageable);
+
         Page<Post> page = postRepository.findAll(pageable);
 
         // collect post ids from the current page
@@ -80,18 +102,18 @@ public class AdminPostService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        // get counts as maps
+        log.debug("Collected {} postIds for aggregation", postIds.size());
+
+        // aggregated counts
         Map<UUID, Long> commentCounts = commentRepository.countMapByPostIds(postIds);
         Map<UUID, Long> likeCounts = likeRepository.countMapByPostIds(postIds);
         Map<UUID, Long> saveCounts = saveRepository.countMapByPostIds(postIds);
 
-        // map Post -> AdminPostDto, using 0 when count missing
         return page.map(p -> {
             long comments = commentCounts.getOrDefault(p.getId(), 0L);
             long likes = likeCounts.getOrDefault(p.getId(), 0L);
             long saves = saveCounts.getOrDefault(p.getId(), 0L);
 
-            // safely convert to int (be mindful of overflow)
             int commentCount = safeLongToInt(comments);
             int likeCount = safeLongToInt(likes);
             int saveCount = safeLongToInt(saves);
@@ -114,9 +136,17 @@ public class AdminPostService {
         });
     }
 
+    /**
+     * Detailed admin view of a single post with all metrics.
+     */
     public PostDetailAdminDto getPostDetail(UUID postId) {
+        log.info("Fetching post detail for postId={}", postId);
+
         Post p = postRepository.findById(postId)
-                .orElseThrow(() -> new NoSuchElementException("Post not found: " + postId));
+                .orElseThrow(() -> {
+                    log.error("Post not found: {}", postId);
+                    return new NoSuchElementException("Post not found: " + postId);
+                });
 
         long comments = commentRepository.countMapByPostIds(Collections.singletonList(postId))
                 .getOrDefault(postId, 0L);
@@ -139,6 +169,8 @@ public class AdminPostService {
         dto.setCommentCount((int) comments);
         dto.setSaveCount((int) saves);
         dto.setLikeCount((int) likes);
+
+        log.info("Post detail fetched successfully for postId={}", postId);
 
         return dto;
     }

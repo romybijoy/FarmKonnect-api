@@ -89,7 +89,7 @@ public class FollowService {
                 .setSenderId(followerId.toString())
                 .setRecipientId(followingId.toString())
                 .setSenderName(follower.getUserName())
-                .setSenderProfilePic(follower.getImage())
+                .setSenderProfilePic(Optional.ofNullable(follower.getImage()).orElse(""))
                 .setTimestamp(relationship.getFollowedAt()
                         .atZone(ZoneId.systemDefault())
                         .toInstant()
