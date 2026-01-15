@@ -29,7 +29,7 @@ eureka:
     hostname: localhost
 
 auth-service:
-  url: http://localhost:4051
+  url: http://auth-service
 
 chat:
   allowed-origins:

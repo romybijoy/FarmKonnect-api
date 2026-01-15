@@ -1,45 +1,6 @@
 spring:
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        corsConfigurations:
-          '[/user/**]':
-            allowedOrigins:
-              - https://farmkonnect.online
-              - https://www.farmkonnect.online
-              - http://localhost:5173
-              - https://admin.farmkonnect.online
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
-
-          '[/api/**]':
-            allowedOrigins:
-              - https://farmkonnect.online
-              - https://www.farmkonnect.online
-              - http://localhost:5173
-              - https://admin.farmkonnect.online
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
-
       routes:
         - id: auth-service-route
           uri: lb://auth-service
@@ -73,7 +34,7 @@ spring:
             - RewritePath=/api/chat/(?<segment>.*), /$\{segment}
 
         - id: chat-ws-route
-          uri: lb://chat-service
+          uri: lb:ws://chat-service
           predicates:
             - Path=/chat-ws/**
           filters: [ ]
