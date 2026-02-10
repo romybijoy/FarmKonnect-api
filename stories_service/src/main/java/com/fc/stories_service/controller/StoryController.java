@@ -24,7 +24,6 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("/stories")
 @Tag(name = "Stories API", description = "Operations related to creating and fetching stories")
 public class StoryController {
 
