@@ -6,6 +6,7 @@ import com.fc.authservice.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import java.util.Optional;
+import java.util.UUID;
 
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +63,7 @@ public class AuthService {
         return userService.findByEmail(loginRequestDTO.getEmail())
                 .filter(u -> passwordEncoder.matches(loginRequestDTO.getPassword(), u.getPassword()))
                 .map(u -> {
-                    String token = jwtUtil.generateToken(u.getEmail(), u.getRole().name());
+                    String token = jwtUtil.generateToken(u.getId(), u.getEmail(), u.getRole().name());
                     log.info("Authentication successful for email={}", u.getEmail());
                     return token;
                 });
@@ -116,8 +117,8 @@ public class AuthService {
         // You may use Spring Security UserDetails, or directly user
         // Here is a simple example:
 
-        String username = user.getEmail(); // or user.getId().toString()
-        String token = jwtUtil.generateToken(username, user.getRole().name());
+        UUID userId = user.getId(); // or user.getId().toString()
+        String token = jwtUtil.generateToken(userId, user.getEmail(), user.getRole().name());
 
         log.info("Generated token for userId={} email={}", user.getId(), user.getEmail());
         return Optional.of(token);

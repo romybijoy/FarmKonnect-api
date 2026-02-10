@@ -1,14 +1,17 @@
 package com.fc.chatservice.controller;
 
+import com.fc.chatservice.dto.DeleteMessageRequest;
 import com.fc.chatservice.model.ChatMessage;
 import com.fc.chatservice.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,21 +38,31 @@ public class ChatController {
         this.chatService = chatService;
     }
 
-    // For real-time messages via WebSocket
     @MessageMapping("/chat.sendMessage")
-    public void sendMessage(@Payload ChatMessage message) {
+    public void sendMessage(ChatMessage message) {
+
         ChatMessage saved = chatService.saveMessage(message);
 
         if (saved.getGroupId() != null) {
-            messagingTemplate.convertAndSend("/topic/group/" + saved.getGroupId(), saved);
+            messagingTemplate.convertAndSend(
+                    "/topic/group/" + saved.getGroupId(),
+                    saved
+            );
         } else {
-            // Send to receiver
-            messagingTemplate.convertAndSend(PRIVATE_TOPIC_PREFIX + saved.getReceiverId(), saved);
-
-            // Also send to sender (so that sender sees their own message as realtime confirmation)
-            messagingTemplate.convertAndSend(PRIVATE_TOPIC_PREFIX + saved.getSenderId(), saved);
+            // SEND TO BOTH USERS ALWAYS
+            messagingTemplate.convertAndSendToUser(
+                    saved.getSenderId().toString(),
+                    "/queue/messages",
+                    saved
+            );
+            messagingTemplate.convertAndSendToUser(
+                    saved.getReceiverId().toString(),
+                    "/queue/messages",
+                    saved
+            );
         }
     }
+
 
     @MessageMapping("/typing")
     public void handleTyping(Map<String, Object> payload) {
@@ -105,4 +118,59 @@ public class ChatController {
     public ResponseEntity<List<ChatMessage>> getGroupChats(@PathVariable UUID groupId) {
         return ResponseEntity.ok(chatService.getMessagesByGroup(groupId));
     }
+
+    @MessageMapping("/chat.deleteMessage")
+    public void deleteMessage(
+            DeleteMessageRequest request
+    ) {
+
+        UUID userId = request.getUserId();
+
+        ChatMessage updatedMessage;
+
+        if ("DELETE_FOR_ME".equals(request.getDeleteType())) {
+
+            updatedMessage = chatService.deleteForMe(
+                    request.getMessageId(),
+                    userId
+            );
+
+            messagingTemplate.convertAndSendToUser(
+                    userId.toString(),
+                    "/queue/delete",
+                    updatedMessage
+            );
+
+        } else if ("DELETE_FOR_EVERYONE".equals(request.getDeleteType())) {
+
+            updatedMessage = chatService.deleteForEveryone(
+                    request.getMessageId(),
+                    userId
+            );
+
+            if (updatedMessage.getGroupId() != null) {
+
+                messagingTemplate.convertAndSend(
+                        "/topic/group/" + updatedMessage.getGroupId(),
+                        updatedMessage
+                );
+
+            } else {
+
+                messagingTemplate.convertAndSendToUser(
+                        updatedMessage.getSenderId().toString(),
+                        "/queue/messages",
+                        updatedMessage
+                );
+
+                messagingTemplate.convertAndSendToUser(
+                        updatedMessage.getReceiverId().toString(),
+                        "/queue/messages",
+                        updatedMessage
+                );
+            }
+        }
+    }
+
+
 }

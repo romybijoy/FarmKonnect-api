@@ -1,6 +1,8 @@
 package com.fc.chatservice.service;
 
 import com.fc.chatservice.dto.CreateGroupRequest;
+import com.fc.chatservice.dto.GroupDto;
+import com.fc.chatservice.exception.GroupNotFoundException;
 import com.fc.chatservice.model.ChatGroup;
 import com.fc.chatservice.model.GroupMember;
 import com.fc.chatservice.repository.ChatGroupRepository;
@@ -58,6 +60,8 @@ public class GroupService {
         GroupMember member = GroupMember.builder()
                 .group(group)
                 .userId(userId)
+                .isAdmin(false)
+                .joinedAt(LocalDateTime.now())
                 .build();
 
         groupMemberRepository.save(member);
@@ -70,5 +74,22 @@ public class GroupService {
 
     public List<ChatGroup> getAllGroups() {
         return chatGroupRepository.findAll();
+    }
+
+    public List<ChatGroup> getGroupsByUserId(UUID userId) {
+        return chatGroupRepository.findAllByUserId(userId);
+    }
+
+    public GroupDto getGroupById(UUID id) {
+        ChatGroup g = chatGroupRepository.findByIdWithMembers(id).orElseThrow(() -> new GroupNotFoundException(id));
+
+        return GroupDto.builder()
+                .id(g.getId())
+                .name(g.getName())
+                .createdBy(g.getCreatedBy())
+                .createdAt(g.getCreatedAt())
+                .memberIds(g.getMembers().stream().map(GroupMember::getUserId).collect(Collectors.toList()))
+                .memberCount(g.getMembers().size())
+                .build();
     }
 }

@@ -2,6 +2,7 @@ package com.fc.chatservice.controller;
 
 import com.fc.chatservice.dto.AddMemberRequest;
 import com.fc.chatservice.dto.CreateGroupRequest;
+import com.fc.chatservice.dto.GroupDto;
 import com.fc.chatservice.model.ChatGroup;
 import com.fc.chatservice.service.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,5 +40,19 @@ public class GroupController {
     @GetMapping
     public ResponseEntity<List<ChatGroup>> getAllGroups() {
         return ResponseEntity.ok(groupService.getAllGroups());
+    }
+
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<ChatGroup>> getGroupsByUserId(
+            @PathVariable UUID userId) {
+
+        return ResponseEntity.ok(groupService.getGroupsByUserId(userId));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<GroupDto> getById(@PathVariable("id") UUID id) {
+        GroupDto dto = groupService.getGroupById(id);
+        return ResponseEntity.ok(dto);
     }
 }

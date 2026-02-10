@@ -3,12 +3,14 @@ package com.fc.chatservice.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class GroupMember {
@@ -25,8 +27,10 @@ public class GroupMember {
     @Column(nullable = false)
     private UUID userId;
 
-    private boolean isAdmin;
+    @Builder.Default
+    private boolean isAdmin = false;
 
+    @Builder.Default
     private LocalDateTime joinedAt = LocalDateTime.now();
 
 }

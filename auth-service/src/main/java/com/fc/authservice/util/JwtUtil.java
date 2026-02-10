@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 
 import lombok.Getter;
@@ -55,15 +56,16 @@ public class JwtUtil {
     /**
      * Generates a JWT token with email and role claims.
      *
-     * @param email the subject of the JWT
+     * @param userId the subject of the JWT
      * @param role  user role
      * @return signed JWT token string
      */
-    public String generateToken(String email, String role) {
-        log.debug("Generating JWT token for email={}, role={}", email, role);
+    public String generateToken(UUID userId, String email, String role) {
+        log.debug("Generating JWT token for userId={}, role={}", userId, role);
 
         return Jwts.builder()
-                .subject(email)
+                .subject(userId.toString())
+                .claim("email", email)
                 .claim("role", role)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 *10)) // 10 hours

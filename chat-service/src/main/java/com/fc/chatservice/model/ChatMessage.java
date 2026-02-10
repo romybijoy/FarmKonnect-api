@@ -25,10 +25,21 @@ public class ChatMessage {
     private UUID receiverId; // null for group
 
     private UUID groupId;  // Nullable if 1-1 chat
+
+    @Column(columnDefinition = "TEXT")
     private String content;
     private String type; // e.g., "TEXT", "IMAGE"
+
+    @Column(name = "file_url", columnDefinition = "TEXT")
     private String fileUrl;
+
+    private String fileName;
     private LocalDateTime timestamp;
+
+    private Boolean deletedForAll = false;
+
+    @Column(columnDefinition = "TEXT")
+    private String deletedBy;
 
 
 }

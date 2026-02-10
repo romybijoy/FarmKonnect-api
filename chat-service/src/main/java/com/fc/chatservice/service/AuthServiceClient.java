@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,7 @@ public class AuthServiceClient {
         }
     }
 
-    public String getUserId(String token) {
+    public UUID getUserId(String token) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
@@ -59,13 +61,14 @@ public class AuthServiceClient {
             );
 
             Map<String, Object> body = response.getBody();
-            if (body != null && body.containsKey("userId")) {
-                Object userIdObj = body.get("userId");
-                return userIdObj != null ? userIdObj.toString() : null;
+            if (body == null || !body.containsKey("userId")) {
+                throw new IllegalStateException("Auth service response missing userId");
             }
+
+            return UUID.fromString(body.get("userId").toString());
         } catch (Exception e) {
             logger.error("Error fetching userId from auth service", e);
+            throw new IllegalStateException("Unable to authenticate WebSocket user", e);
         }
-        return null;
     }
 }

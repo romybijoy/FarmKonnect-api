@@ -4,7 +4,10 @@ import com.fc.chatservice.dto.UserPresence;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,46 +18,60 @@ public class UserPresenceService {
     private static final String LAST_SEEN_KEY_PREFIX = "last_seen:";
 
     private final RedisTemplate<String, String> redisTemplate;
-
     private static final Logger logger = LoggerFactory.getLogger(UserPresenceService.class);
 
     public UserPresenceService(RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
-    public UserPresence getPresence(String email) {
-        Boolean isOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, email);
+    public UserPresence getPresence(UUID userId) {
+        String key = userId.toString();
 
-        logger.debug("Checking presence for userId: [{}], isOnline: {}", email, isOnline);
-        UserPresence result;
+        // 1️⃣ ONLINE check
+        Boolean isOnline =
+                redisTemplate.opsForSet().isMember("online_users", key);
+
         if (Boolean.TRUE.equals(isOnline)) {
-            logger.debug("presence true for {}", email);
-            result = new UserPresence(true, null);
-            return result;
-        } else {
-            String lastSeenStr = redisTemplate.opsForValue().get(LAST_SEEN_KEY_PREFIX + email);
-            LocalDateTime lastSeen = null;
-
-            if (lastSeenStr != null) {
-                lastSeen = LocalDateTime.parse(lastSeenStr);
-            }
-            result = new UserPresence(false, lastSeen);
-            return result;
+            return new UserPresence(true, null);
         }
+
+        // 2️⃣ FALLBACK: last seen
+        String lastSeenStr =
+                redisTemplate.opsForValue().get("last_seen:" + key);
+
+        if (lastSeenStr != null) {
+            return new UserPresence(false, LocalDateTime.parse(lastSeenStr));
+        }
+
+        // 3️⃣ FINAL fallback (never logged in / unknown)
+        return new UserPresence(false, null);
     }
 
-    // Optionally: Call when user connects/disconnects
-    public void setUserOnline(String email) {
-        redisTemplate.opsForSet().add(ONLINE_USERS_KEY, email);
-        logger.info("User set as ONLINE in Redis: {}", email);
-    }
 
-    public void setUserOffline(String email) {
-        redisTemplate.opsForSet().remove(ONLINE_USERS_KEY, email);
+    public void setUserOnline(UUID userId) {
+        String key = userId.toString();
+
+        redisTemplate.opsForSet().add(ONLINE_USERS_KEY, key);
+
+        // 🔥 add heartbeat TTL (2 minutes)
         redisTemplate.opsForValue().set(
-                LAST_SEEN_KEY_PREFIX + email,
+                "presence:" + key,
+                "online",
+                Duration.ofMinutes(2)
+        );
+    }
+
+
+    public void setUserOffline(UUID userId) {
+        String key = userId.toString();
+
+        redisTemplate.opsForSet().remove(ONLINE_USERS_KEY, key);
+        redisTemplate.opsForValue().set(
+                LAST_SEEN_KEY_PREFIX + key,
                 LocalDateTime.now().toString()
         );
-        logger.info("User set as OFFLINE in Redis: {}", email);
+
+        logger.info("User set as OFFLINE in Redis: {}", key);
     }
 }
+

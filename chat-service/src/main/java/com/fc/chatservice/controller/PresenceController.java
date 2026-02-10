@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/presence")
@@ -19,9 +21,9 @@ public class PresenceController {
         this.presenceService = presenceService;
     }
 
-    @GetMapping("/{email}")
-    public ResponseEntity<UserPresence> getUserPresence(@PathVariable String email) {
-        UserPresence presence = presenceService.getPresence(email);
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserPresence> getUserPresence(@PathVariable UUID userId) {
+        UserPresence presence = presenceService.getPresence(userId);
         return ResponseEntity.ok(presence);
     }
 }

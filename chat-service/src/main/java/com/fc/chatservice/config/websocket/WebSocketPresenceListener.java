@@ -9,6 +9,7 @@ import org.springframework.web.socket.messaging.*;
 
 import java.security.Principal;
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +30,14 @@ public class WebSocketPresenceListener {
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
-
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String email = getEmailFromHeaderOrAuth(accessor);
-        logger.info("User connected: {}", email);
-        if (email != null) {
-            userPresenceService.setUserOnline(email);
+
+        String userId = resolveUserId(accessor);
+        if (userId != null) {
+            userPresenceService.setUserOnline(UUID.fromString(userId));
+            logger.info("User connected: {}", userId);
+        } else {
+            logger.warn("WebSocket CONNECT without Principal");
         }
     }
 
@@ -42,28 +45,25 @@ public class WebSocketPresenceListener {
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        logger.debug("Session Attributes on Disconnect: {}", accessor.getSessionAttributes());
-
-        String email = getEmailFromHeaderOrAuth(accessor);
-
-        logger.debug("Email resolved in disconnect: {}", email);
-
-        if (email != null) {
-            logger.info("User disconnected: {}", email);
-            userPresenceService.setUserOffline(email); // remove from Redis
+        String userId = resolveUserId(accessor);
+        if (userId != null) {
+            userPresenceService.setUserOffline(UUID.fromString(userId));
+            logger.info("User disconnected: {}", userId);
         } else {
-            logger.warn("Could not extract email on disconnect.");
+            logger.warn("Disconnect without principal");
         }
     }
 
+
+
     private String getEmailFromHeaderOrAuth(StompHeaderAccessor accessor) {
-        // ✅ 1. Try to get email from Principal (best source)
+        // 1. Try to get email from Principal (best source)
         Principal principal = accessor.getUser();
         if (principal != null) {
             return principal.getName(); // typically the email
         }
 
-        // ✅ 2. Fallback to JWT token in native headers
+        // 2. Fallback to JWT token in native headers
         String authHeader = accessor.getFirstNativeHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
@@ -85,6 +85,25 @@ public class WebSocketPresenceListener {
         return null;
     }
 
+    private String resolveUserId(StompHeaderAccessor accessor) {
+
+        // 1️⃣ Best case: Principal exists
+        Principal principal = accessor.getUser();
+        if (principal != null) {
+            return principal.getName();
+        }
+
+        // 2️⃣ Fallback: session attributes (MOST IMPORTANT)
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        if (sessionAttributes != null) {
+            Object userId = sessionAttributes.get("userId");
+            if (userId != null) {
+                return userId.toString();
+            }
+        }
+
+        return null;
+    }
 
 
 }
