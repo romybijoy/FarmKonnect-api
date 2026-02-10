@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -282,6 +283,20 @@ public class UserController {
                         "valid", !exists,
                         "message", exists ? "Email already registered" : "Email is available"
                 )
+        );
+    }
+
+    @GetMapping("/username/{username}")
+    public ResponseEntity<UserProfileResponse> getUserByUsername(
+            @PathVariable String username,
+            Principal principal
+    ) {
+        UUID loggedInUserId = principal != null
+                ? UUID.fromString(principal.getName())
+                : null;
+
+        return ResponseEntity.ok(
+                usersManagementService.getUserByUsername(username, loggedInUserId)
         );
     }
 }

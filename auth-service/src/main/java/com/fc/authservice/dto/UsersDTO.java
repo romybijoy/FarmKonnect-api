@@ -64,8 +64,8 @@ public class UsersDTO {
     /** Full name of the user */
     private String name;
 
-    /** City where the user resides */
-    private String city;
+    /** District where the user resides */
+    private String district;
 
     /** User's email address */
     private String email;
@@ -81,6 +81,9 @@ public class UsersDTO {
 
     /** URL of the user's profile picture */
     private String image;
+
+    /** User's bio description */
+    private String description;
 
     /** Reason for blocking the user (if account is blocked) */
     private String blockReason;

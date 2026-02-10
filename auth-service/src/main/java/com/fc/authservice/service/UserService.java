@@ -5,6 +5,7 @@ import com.fc.authservice.enums.Role;
 import com.fc.authservice.enums.SocialProvider;
 import com.fc.authservice.exception.*;
 import com.fc.authservice.model.User;
+import com.fc.authservice.repository.FollowRepository;
 import com.fc.authservice.repository.UserRepository;
 import com.fc.authservice.util.EmailUtil;
 import com.fc.authservice.util.JwtUtil;
@@ -53,6 +54,9 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+
+    private final FollowRepository followRepository;
+
     @Autowired
     private OtpUtil otpUtil;
 
@@ -70,9 +74,10 @@ public class UserService {
     @Autowired
     public ModelMapper modelMapper;
 
-    public UserService(UserRepository userRepository, @Lazy AuthService authService) {
+    public UserService(UserRepository userRepository, @Lazy AuthService authService, FollowRepository followRepository) {
         this.userRepository = userRepository;
         this.authService = authService;
+        this.followRepository= followRepository;
     }
 
     /**
@@ -135,6 +140,9 @@ public class UserService {
         response.setUserId(user.getId());
         response.setName(user.getUserName());
         response.setEmail(user.getEmail());
+        response.setDistrict(user.getDistrict());
+        response.setImage(user.getImage());
+        response.setDescription(user.getDescription());
         response.setEnabled(user.isEnabled());
         response.setExpirationTime("24Hrs");
         response.setMessage("Successfully Logged In");
@@ -774,5 +782,37 @@ public class UserService {
                         user.getEmail()
                 ))
                 .toList();
+    }
+
+    /* Get user by username for profile*/
+    public UserProfileResponse getUserByUsername(String username, UUID loggedInUserId) {
+
+        User profileUser = userRepository.findByUserName(username);
+        if (profileUser == null) {
+            throw new UsernameNotFoundException(USER_NOT_FOUND);
+        }
+        long followersCount =
+               followRepository. countByFollowingId(profileUser.getId());
+
+        long followingCount =
+                followRepository.countByFollowerId(profileUser.getId());
+
+        boolean isFollowing = loggedInUserId != null &&
+                followRepository.existsByFollowerIdAndFollowingId(
+                        loggedInUserId,
+                        profileUser.getId()
+                );
+
+        return UserProfileResponse.builder()
+                .userId(profileUser.getId())
+                .username(profileUser.getUserName())
+                .name(profileUser.getUserName())
+                .district(profileUser.getDistrict())
+                .imageUrl(profileUser.getImage())
+                .bio(profileUser.getDescription())
+                .followersCount((int) followersCount)
+                .followingCount((int) followingCount)
+                .isFollowing(isFollowing)
+                .build();
     }
 }
