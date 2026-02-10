@@ -9,9 +9,8 @@ import com.fc.postservice.repository.PostRepository;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,16 +19,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * gRPC Post Service Implementation. Handles:
+ * - Fetch posts for feed
+ * - Like/unlike toggle
+ * - Save/unsave toggle
+ * - Fetch saved posts
+ * - Fetch single post
+ */
 @GrpcService
 @RequiredArgsConstructor
+@Slf4j
 public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
-
-    private static final Logger log = LoggerFactory.getLogger(PostServiceImpl.class);
 
     @Value("${server.port}")
     private String port;
-
-    private static final String POST_NOT_FOUND_MSG = "Post not found";
 
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
@@ -38,7 +42,11 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
     private final PostSaveService postSaveService;
     private final PostService postService;
 
+    private static final String POST_NOT_FOUND_MSG = "Post not found";
 
+    // ==========================================================================
+    // 1️. GET POSTS BY USER IDS
+    // ==========================================================================
     @Override
     public void getPostsByUserIds(UserIdsRequest request, StreamObserver<PostListResponse> responseObserver) {
         List<UUID> userIds = request.getUserIdsList().stream()
@@ -47,7 +55,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
         log.info("getPostsByUserIds - userIds: {} - handling on port {}", userIds, port);
 
-        // All DB fetching + mapping occurs inside PostService.getPostsByUserIdsAsGrpc (transactional)
+        try {
         List<PostMessage> grpcPosts = postService.getPostsByUserIdsAsGrpc(userIds);
 
         log.info("getPostsByUserIds - returning {} posts for userIds {}", grpcPosts.size(), userIds);
@@ -58,51 +66,17 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Error in getPostsByUserIds", e);
+            responseObserver.onError(
+                    Status.INTERNAL.withDescription("Failed to fetch posts").asRuntimeException()
+            );
+        }
     }
 
-    private PostMessage toGrpcPost(Post post) {
-        log.debug("toGrpcPost - mapping post id: {}", post != null ? post.getId() : null);
-
-        PostMessage.Builder builder = PostMessage.newBuilder()
-                .setId(post != null ? post.getId().toString() : null)
-                .setUserId(post.getUserId().toString())
-                .setContent(Optional.ofNullable(post.getContent()).orElse(""))
-                .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
-                .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "");
-
-        if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
-            builder.addAllImageUrls(post.getPostImages());
-        }
-
-        if (post.getImage() != null) { // profilePic
-            builder.setProfilePic(post.getImage());
-        }
-
-        // handle repost details
-        if (post.isRepost() && post.getOriginalPostId() != null) {
-            builder.setIsRepost(true)
-                    .setOriginalPostId(post.getOriginalPostId().toString());
-
-            if (post.getRepostedBy() != null) {
-                builder.setRepostedBy(post.getRepostedBy().toString());
-            }
-            if (post.getRepostedAt() != null) {
-                builder.setRepostedAt(post.getRepostedAt().toString());
-            }
-        }
-
-        // STATUS MAPPING  (IMPORTANT!)
-        if (post.getStatus() != null) {
-            builder.setStatus(PostStatus.valueOf(post.getStatus().name()));
-        } else {
-            builder.setStatus(PostStatus.POST_STATUS_UNSPECIFIED);
-        }
-        PostMessage result = builder.build();
-        log.debug("toGrpcPost - mapped post id: {} -> grpc id: {}", post.getId(), result.getId());
-        return result;
-    }
-
-
+    // ==========================================================================
+    // 2. LIKE / UNLIKE POST
+    // ==========================================================================
 
     @Override
     @Transactional
@@ -151,7 +125,9 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         }
     }
 
-
+    // ==========================================================================
+    // 3. SAVE / UNSAVE POST
+    // ==========================================================================
     @Override
     @Transactional
     public void savePost(SavePostRequest request, StreamObserver<SavePostResponse> responseObserver) {
@@ -198,6 +174,9 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         }
     }
 
+    // ==========================================================================
+    // 4️ . GET SAVED POSTS
+    // ==========================================================================
 
     @Override
     public void getSavedPosts(GetSavedPostsRequest request, StreamObserver<GetSavedPostsResponse> responseObserver) {
@@ -232,6 +211,9 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         }
     }
 
+    // ==========================================================================
+    // 5️. CHECK LIKE
+    // ==========================================================================
     @Override
     public void isPostLikedByUser(IsPostLikedByUserRequest request,
                                   StreamObserver<IsPostLikedByUserResponse> responseObserver) {
@@ -251,6 +233,9 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         responseObserver.onCompleted();
     }
 
+    // ==========================================================================
+    // 6️. CHECK SAVE
+    // ==========================================================================
     @Override
     public void isPostSavedByUser(IsPostSavedByUserRequest request,
                                   StreamObserver<IsPostSavedByUserResponse> responseObserver) {
@@ -270,6 +255,9 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         responseObserver.onCompleted();
     }
 
+    // ==========================================================================
+    // 7️. GET LIKE COUNT
+    // ==========================================================================
     @Override
     public void getLikeCount(GetLikeCountRequest request,
                              StreamObserver<GetLikeCountResponse> responseObserver) {
@@ -307,6 +295,9 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         return result;
     }
 
+    // ==========================================================================
+    // 8️. GET POST BY ID
+    // ==========================================================================
     @Override
     public void getPostById(PostIdRequest request, StreamObserver<PostMessage> responseObserver) {
         log.info("getPostById - request: postId={}", request.getPostId());
@@ -325,5 +316,50 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         log.info("getPostById - returning postId={}", postId);
     }
 
+    // ==========================================================================
+    //  Utility: Convert Entity → gRPC PostMessage (null-safe)
+    // ==========================================================================
+
+    private PostMessage toGrpcPost(Post post) {
+        log.debug("toGrpcPost - mapping post id: {}", post != null ? post.getId() : null);
+
+        PostMessage.Builder builder = PostMessage.newBuilder()
+                .setId(post != null ? post.getId().toString() : null)
+                .setUserId(post.getUserId().toString())
+                .setContent(Optional.ofNullable(post.getContent()).orElse(""))
+                .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
+                .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "");
+
+        if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
+            builder.addAllImageUrls(post.getPostImages());
+        }
+
+        if (post.getImage() != null) { // profilePic
+            builder.setProfilePic(post.getImage());
+        }
+
+        // handle repost details
+        if (post.isRepost() && post.getOriginalPostId() != null) {
+            builder.setIsRepost(true)
+                    .setOriginalPostId(post.getOriginalPostId().toString());
+
+            if (post.getRepostedBy() != null) {
+                builder.setRepostedBy(post.getRepostedBy().toString());
+            }
+            if (post.getRepostedAt() != null) {
+                builder.setRepostedAt(post.getRepostedAt().toString());
+            }
+        }
+
+        // STATUS MAPPING  (IMPORTANT!)
+        if (post.getStatus() != null) {
+            builder.setStatus(PostStatus.valueOf(post.getStatus().name()));
+        } else {
+            builder.setStatus(PostStatus.POST_STATUS_UNSPECIFIED);
+        }
+        PostMessage result = builder.build();
+        log.debug("toGrpcPost - mapped post id: {} -> grpc id: {}", post.getId(), result.getId());
+        return result;
+    }
 
 }
