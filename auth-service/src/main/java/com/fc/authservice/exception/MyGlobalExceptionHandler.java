@@ -1,6 +1,7 @@
 package com.fc.authservice.exception;
 import java.time.LocalDateTime;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -144,8 +145,14 @@ public class MyGlobalExceptionHandler {
      * @return an INTERNAL_SERVER_ERROR (500) response
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAll(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleAll(Exception ex, HttpServletRequest request) throws Exception{
         log.error("Unhandled exception occurred", ex);
+        String path = request.getRequestURI();
+        // Skip swagger endpoints
+        if (path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui")) {
+            throw ex;
+        }
         return new ResponseEntity<>(new ErrorResponse(500, "Internal Server Error"), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
