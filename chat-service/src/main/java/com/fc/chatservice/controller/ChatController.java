@@ -9,6 +9,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,14 +48,13 @@ public class ChatController {
             );
         } else {
             // SEND TO BOTH USERS ALWAYS
-            messagingTemplate.convertAndSendToUser(
-                    saved.getSenderId().toString(),
-                    "/queue/messages",
+            messagingTemplate.convertAndSend(
+                    "/topic/private/" + saved.getReceiverId(),
                     saved
             );
-            messagingTemplate.convertAndSendToUser(
-                    saved.getReceiverId().toString(),
-                    "/queue/messages",
+
+            messagingTemplate.convertAndSend(
+                    "/topic/private/" + saved.getSenderId(),
                     saved
             );
         }
@@ -62,29 +62,43 @@ public class ChatController {
 
 
     @MessageMapping("/typing")
-    public void handleTyping(Map<String, Object> payload) {
+    public void handleTyping(Map<String, Object> payload, Principal principal) {
+
+        System.out.println(principal.getName());
         String email = (String) payload.get(EMAIL);
         Boolean isTyping = (Boolean) payload.get(TYPING);
 
         if (email == null || isTyping == null) return;
-        logger.debug("Typing received: email={}, isTyping={}", email, isTyping);
+
+        String senderId = principal.getName();
+
         if (payload.containsKey("receiverId")) {
-            // Private chat typing
+
             String receiverId = (String) payload.get("receiverId");
 
-            messagingTemplate.convertAndSendToUser(
-                    receiverId,
-                    "/queue/typing",
-                    Map.of(EMAIL, email, TYPING, isTyping)
+            messagingTemplate.convertAndSend(
+                    "/topic/private/" + receiverId,
+                    Map.of(
+                            EMAIL, email,
+                            TYPING, isTyping,
+                            "eventType", "TYPING",
+                            "senderId", senderId
+                    )
             );
 
         } else if (payload.containsKey("groupId")) {
-            // Group chat typing
+
             String groupId = (String) payload.get("groupId");
 
             messagingTemplate.convertAndSend(
-                    "/topic/typing/group/" + groupId,
-                    Map.of(EMAIL, email, TYPING, isTyping)
+                    "/topic/group/" + groupId,
+                    Map.of(
+                            EMAIL, email,
+                            TYPING, isTyping,
+                            "eventType", "TYPING",
+                            "senderId", senderId,
+                            "groupId", groupId
+                    )
             );
         }
     }

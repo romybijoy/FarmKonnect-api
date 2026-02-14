@@ -12,4 +12,10 @@ public class ReactionEvent {
     private UUID userId;
     private String emoji;
     private String type; // "ADD", "REMOVE", "UPDATE"
+
+    private UUID groupId;
+    private UUID senderId;
+    private UUID receiverId;
+
+    private String eventType;
 }
