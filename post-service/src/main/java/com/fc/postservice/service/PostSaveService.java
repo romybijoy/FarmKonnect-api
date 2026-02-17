@@ -1,10 +1,13 @@
 package com.fc.postservice.service;
 
+import com.fc.postservice.client.UserServiceClient;
 import com.fc.postservice.dto.PostDTO;
+import com.fc.postservice.dto.UserDto;
 import com.fc.postservice.model.Post;
 import com.fc.postservice.model.Save;
 import com.fc.postservice.repository.PostRepository;
 import com.fc.postservice.repository.SavedPostRepository;
+import com.postservice.PostMessage;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,9 +15,12 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+
+import static com.fc.postservice.mapper.PostMapper.mapToDto;
 
 /**
  * Service responsible for managing saved posts:
@@ -31,6 +37,11 @@ public class PostSaveService {
 
     private final PostRepository postRepository;
     private final SavedPostRepository saveRepository;
+
+
+    private final UserServiceClient userServiceClient;
+
+    private PostLikeService postLikeService;
 
     @Autowired
     public ModelMapper modelMapper;
@@ -50,6 +61,7 @@ public class PostSaveService {
                         return new NoSuchElementException("Post not found");
                     });
 
+            System.out.println(post.toString());
             Save save = new Save();
             save.setUserId(userId);
             save.setPost(post);
@@ -94,12 +106,62 @@ public class PostSaveService {
      * Fetches all posts saved by a user.
      */
     public List<PostDTO> getSavedPosts(UUID userId) {
+
         log.info("Fetching saved posts for userId={}", userId);
 
-        List<Save> saves = saveRepository.findByUserId(userId);
-        return saves.stream()
-                .map(save -> modelMapper.map(save.getPost(), PostDTO.class)) // map the actual Post
+        return saveRepository.findByUserId(userId)
+                .stream()
+                .map(save -> mapToDto(save.getPost(), userId))
                 .toList();
+    }
+
+
+    private PostDTO mapToDto(Post post, UUID currentUserId) {
+
+        UserDto user = userServiceClient.getUserById(post.getUserId());
+
+        PostDTO dto = PostDTO.builder()
+                .id(post.getId())
+                .userId(post.getUserId())
+                .content(post.getContent())
+                .postImages(post.getPostImages())
+                .createdAt(post.getCreatedAt())
+                .userName(user.getName())
+                .description(user.getDescription())
+                .image(user.getProfileImage())
+                .district(user.getDistrict())
+                .repost(post.isRepost())
+                .originalPostId(post.getOriginalPostId())
+                .repostedAt(post.getRepostedAt())
+                .build();
+
+        // Repost enrichment
+        if (post.isRepost() && post.getOriginalPostId() != null) {
+
+            Post originalPost = postRepository.findById(post.getOriginalPostId())
+                    .orElseThrow(() -> new RuntimeException("Original post not found"));
+
+            dto.setOriginalPost(mapBasePost(originalPost));
+        }
+
+        return dto;
+    }
+
+
+    private PostDTO mapBasePost(Post post) {
+        UserDto user = userServiceClient.getUserById(post.getUserId());
+
+        return PostDTO.builder()
+                .id(post.getId())
+                .userId(post.getUserId())
+                .content(post.getContent())
+                .postImages(post.getPostImages())
+                .createdAt(post.getCreatedAt())
+                .userName(user.getName())
+                .description(user.getDescription())
+                .image(user.getProfileImage())
+                .district(user.getDistrict())
+                .build();
     }
 
 

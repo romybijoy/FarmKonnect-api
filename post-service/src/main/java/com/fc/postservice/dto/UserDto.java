@@ -1,8 +1,12 @@
 package com.fc.postservice.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 
 /**
@@ -18,11 +22,21 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserDto {
 
-    /** Display name of the user */
+    @Schema(description = "Unique ID of the user")
+    private UUID userId;
+
+    @Schema(description = "Name of the user")
     private String name;
 
-    /** Public URL of the user's profile image */
+    @Schema(description = "Bio or short profile description of the user")
+    private String description;
+
+    @Schema(description = "Profile image URL of the user")
     private String profileImage;
+
+    @Schema(description = "District or region of the user")
+    private String district;
 }
