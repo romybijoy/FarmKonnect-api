@@ -1,5 +1,6 @@
 package com.fc.chatservice.repository;
 
+import com.fc.chatservice.enums.MessageStatus;
 import com.fc.chatservice.model.ChatMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,18 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
 
 
     List<ChatMessage> findByGroupIdOrderByTimestampAsc(UUID groupId);
+
+    List<ChatMessage>
+    findBySenderIdAndReceiverIdAndStatus(
+            UUID senderId,
+            UUID receiverId,
+            MessageStatus status
+    );
+
+    List<ChatMessage> findBySenderIdAndReceiverIdAndStatusIn(
+            UUID senderId,
+            UUID receiverId,
+            List<MessageStatus> statuses
+    );
+
 }

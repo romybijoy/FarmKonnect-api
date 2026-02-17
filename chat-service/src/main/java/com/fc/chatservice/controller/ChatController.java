@@ -1,6 +1,8 @@
 package com.fc.chatservice.controller;
 
 import com.fc.chatservice.dto.DeleteMessageRequest;
+import com.fc.chatservice.dto.GroupMessageResponse;
+import com.fc.chatservice.enums.MessageStatus;
 import com.fc.chatservice.model.ChatMessage;
 import com.fc.chatservice.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,7 @@ public class ChatController {
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(ChatMessage message) {
 
+        message.setStatus(MessageStatus.SENT);
         ChatMessage saved = chatService.saveMessage(message);
 
         if (saved.getGroupId() != null) {
@@ -58,6 +61,50 @@ public class ChatController {
                     saved
             );
         }
+    }
+
+    // MARK AS DELIVERED
+    @MessageMapping("/chat.private.delivered")
+    public void markPrivateDelivered(Map<String, String> payload, Principal principal) {
+
+        UUID receiverId = UUID.fromString(principal.getName());
+        UUID senderId = UUID.fromString(payload.get("senderId"));
+
+        chatService.markPrivateMessagesAsDelivered(senderId, receiverId);
+    }
+
+    // MARK AS READ
+    @MessageMapping("/chat.private.markAsRead")
+    public void markPrivateRead(Map<String, String> payload, Principal principal) {
+
+        UUID receiverId = UUID.fromString(principal.getName());
+        UUID senderId = UUID.fromString(payload.get("senderId"));
+
+        chatService.markPrivateMessagesAsRead(senderId, receiverId);
+    }
+
+    @MessageMapping("/chat.group.delivered")
+    public void markGroupDelivered(Map<String, String> payload, Principal principal) {
+
+        System.out.println("GROUP DELIVERED HIT");
+        System.out.println("Payload: " + payload);
+
+        UUID userId = UUID.fromString(principal.getName());
+        UUID messageId = UUID.fromString(payload.get("messageId"));
+
+        chatService.markGroupMessageDelivered(messageId, userId);
+    }
+
+    @MessageMapping("/chat.group.read")
+    public void markGroupRead(Map<String, String> payload, Principal principal) {
+
+        System.out.println("GROUP READ HIT");
+        System.out.println("Payload: " + payload);
+
+        UUID userId = UUID.fromString(principal.getName());
+        UUID messageId = UUID.fromString(payload.get("messageId"));
+
+        chatService.markGroupMessageRead(messageId, userId);
     }
 
 
@@ -126,7 +173,7 @@ public class ChatController {
     }
 
     @GetMapping("/history/group/{groupId}")
-    public ResponseEntity<List<ChatMessage>> getGroupChats(@PathVariable UUID groupId) {
+    public ResponseEntity<List<GroupMessageResponse>> getGroupChats(@PathVariable UUID groupId) {
         return ResponseEntity.ok(chatService.getMessagesByGroup(groupId));
     }
 
