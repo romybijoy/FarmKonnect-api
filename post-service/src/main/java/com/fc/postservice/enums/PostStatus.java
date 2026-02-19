@@ -12,13 +12,27 @@ package com.fc.postservice.enums;
 public enum PostStatus {
 
     /**
-     * The post is visible to users and appears in feeds.
+     * Post created and waiting for AI moderation.
+     */
+    PENDING,
+
+    /**
+     * Approved by AI / moderation and visible in feeds.
      */
     ACTIVE,
 
     /**
-     * The post has been removed by an admin or moderation action.
-     * Removed posts are excluded from user feeds and interactions.
+     * Rejected by AI moderation.
      */
-    REMOVED
+    REJECTED,
+
+    /**
+     * Removed manually by admin.
+     */
+    REMOVED,
+
+    /**
+     * Reported by users but not yet reviewed.
+     */
+    REPORTED
 }

@@ -28,14 +28,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
      * NOTE: Sorting in JPQL with fetch join may not always be stable.
      *       If needed, sort via Java after fetching.
      */
-    @Query("""
-      select distinct p
-      from Post p
-      left join fetch p.postImages
-      where p.userId in :userIds
-      order by p.createdAt desc
-    """)
-    List<Post> findByUserIdInWithImages(@Param("userIds") List<UUID> userIds);
+    List<Post> findByUserIdInOrderByCreatedAtDesc(List<UUID> userIds);
 
     /**
      * Update moderation fields for a post (status, removedBy, removedAt, reason).
@@ -47,5 +40,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 
 /* fetch post based on user id with pagination */
     Page<Post> findByUserId(UUID userId, Pageable pageable);
+    
+    List<Post> findByStatus(PostStatus status);
 
 }

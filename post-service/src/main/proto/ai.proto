@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package ai;
+
+option java_package = "com.fc.ai";
+option java_multiple_files = true;
+
+service AIService {
+  rpc ValidateContent (ContentRequest) returns (AIResponse);
+  rpc ValidateImage (ImageRequest) returns (AIResponse);
+}
+
+message ContentRequest {
+  string text = 1;
+}
+
+message ImageRequest {
+  string imageUrl = 1;
+}
+
+message AIResponse {
+  string verdict = 1;
+  double score = 2;
+}

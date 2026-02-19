@@ -8,6 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,8 @@ import org.slf4j.LoggerFactory;
  */
 @SpringBootApplication
 @Slf4j
+@EnableAsync
+@EnableScheduling
 public class PostServiceApplication {
 
     private static final Logger logger = LoggerFactory.getLogger(PostServiceApplication.class);

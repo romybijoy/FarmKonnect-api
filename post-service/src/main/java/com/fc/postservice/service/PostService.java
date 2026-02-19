@@ -3,6 +3,7 @@ package com.fc.postservice.service;
 import com.fc.postservice.dto.PostDTO;
 import com.fc.postservice.dto.PostRequest;
 import com.fc.postservice.dto.UpdatePostRequest;
+import com.fc.postservice.enums.PostStatus;
 import com.fc.postservice.model.Post;
 import com.fc.postservice.repository.PostRepository;
 import com.postservice.PostMessage;
@@ -42,6 +43,9 @@ public class PostService {
 
     @Autowired
     private PostRepository postRepository;
+
+    @Autowired
+    private ModerationService moderationService;
 
     @Autowired
     public ModelMapper modelMapper;
@@ -88,7 +92,13 @@ public class PostService {
     public List<PostMessage> getPostsByUserIdsAsGrpc(List<UUID> userIds) {
         log.info("Fetching posts via gRPC for userIds={}", userIds);
 
-        List<Post> posts = postRepository.findByUserIdInWithImages(userIds);
+        List<Post> posts = postRepository.findByUserIdInOrderByCreatedAtDesc(userIds);
+
+        log.info("Posts size after repository call: {}", posts.size());
+
+        posts.forEach(p ->
+                log.info("DB Post id={} status={}", p.getId(), p.getStatus())
+        );
         return posts.stream()
                 .map(this::toGrpcPost)
                 .collect(Collectors.toList());
@@ -98,6 +108,7 @@ public class PostService {
      * Convert Post -> gRPC PostMessage.
      */
     private PostMessage toGrpcPost(Post post) {
+
         PostMessage.Builder builder = PostMessage.newBuilder()
                 .setId(post.getId().toString())
                 .setUserId(post.getUserId().toString())
@@ -115,9 +126,24 @@ public class PostService {
 
         // Repost fields
         if (post.isRepost() && post.getOriginalPostId() != null) {
-            builder.setIsRepost(true).setOriginalPostId(post.getOriginalPostId().toString());
-            if (post.getRepostedBy() != null) builder.setRepostedBy(post.getRepostedBy().toString());
-            if (post.getRepostedAt() != null) builder.setRepostedAt(post.getRepostedAt().toString());
+            builder.setIsRepost(true)
+                    .setOriginalPostId(post.getOriginalPostId().toString());
+
+            if (post.getRepostedBy() != null)
+                builder.setRepostedBy(post.getRepostedBy().toString());
+
+            if (post.getRepostedAt() != null)
+                builder.setRepostedAt(post.getRepostedAt().toString());
+        }
+
+        if (post.getStatus() != null) {
+            builder.setStatus(
+                    com.postservice.PostStatus.valueOf(
+                            post.getStatus().name()
+                    )
+            );
+        } else {
+            builder.setStatus(com.postservice.PostStatus.PENDING);
         }
 
         return builder.build();
@@ -154,6 +180,9 @@ public class PostService {
         post.setPostImages(req.getPostImages());
         post.setCreatedAt(LocalDateTime.now());
 
+        // IMPORTANT — set initial status
+        post.setStatus(PostStatus.PENDING);
+
         // Denormalized user info
         post.setUserId(UUID.fromString(user.getUserId()));
         post.setUserName(user.getUserName());
@@ -163,9 +192,14 @@ public class PostService {
 
         Post saved = postRepository.save(post);
 
-        log.info("Post created successfully | postId={}", saved.getId());
+        log.info("Post created with PENDING status | postId={}", saved.getId());
+
+        // Trigger async AI validation
+        moderationService.validatePostAsync(saved.getId());
+
         return saved;
     }
+
 
 
     /**

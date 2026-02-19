@@ -86,7 +86,8 @@ public class Post {
 
     @Enumerated(EnumType.STRING)
     @Schema(description = "Current moderation status of the post")
-    private PostStatus status = PostStatus.ACTIVE;
+    @Column(nullable = false)
+    private PostStatus status = PostStatus.PENDING;
 
     @Column(columnDefinition = "BINARY(16)")
     @Schema(description = "Admin user ID who removed the post")
@@ -98,5 +99,7 @@ public class Post {
     @Column(name = "moderation_reason", columnDefinition = "TEXT")
     @Schema(description = "Reason for removal or moderation action")
     private String moderationReason;
+
+    private Double aiScore;
 
 }

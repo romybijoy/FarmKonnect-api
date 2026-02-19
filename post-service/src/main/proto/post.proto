@@ -110,12 +110,9 @@ message PostIdRequest {
 }
 
 enum PostStatus {
-  POST_STATUS_UNSPECIFIED = 0;
-  ACTIVE = 1;    // visible in feeds
-  REMOVED = 2;   // moderated/removed — feed-service should filter these out
-  HIDDEN = 3;    // hidden by owner or system
+  PENDING = 0;
+  ACTIVE = 1;
+  REJECTED = 2;
+  REMOVED = 3;
   REPORTED = 4;
-  DRAFT = 5;
-  ARCHIVED = 6;
-  BLOCKED = 7;
 }

@@ -48,3 +48,24 @@ grpc:
       negotiation-type: plaintext
       enable-keep-alive: true
       default-load-balancing-policy: round_robin
+
+    ai-service:
+      address: static://localhost:50051
+      negotiation-type: plaintext
+      enable-keep-alive: true
+resilience4j:
+  circuitbreaker:
+    instances:
+      aiService:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+  timelimiter:
+    instances:
+      aiService:
+        timeoutDuration: 3s
+

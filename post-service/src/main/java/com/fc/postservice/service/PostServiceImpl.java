@@ -277,23 +277,24 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
 
     // Utility method: convert entity -> gRPC message
     private PostMessage mapToGrpc(Post post) {
-        log.debug("mapToGrpc - mapping post id: {}", post != null ? post.getId() : null);
         PostMessage.Builder builder = PostMessage.newBuilder()
-                .setId(post != null ? post.getId().toString() : null)
+                .setId(post.getId().toString())
                 .setUserId(post.getUserId().toString())
-                .setContent(post.getContent())
-                .setCreatedAt(post.getCreatedAt().toString());
+                .setContent(post.getContent() == null ? "" : post.getContent())
+                .setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : "")
+                .setStatus(
+                        com.postservice.PostStatus.valueOf(
+                                post.getStatus().name()
+                        )
+                );
 
-        // Handle repeated field safely
         if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
             builder.addAllImageUrls(post.getPostImages());
         }
 
-
-        PostMessage result = builder.build();
-        log.debug("mapToGrpc - mapped post id: {} -> grpc id: {}", post.getId(), result.getId());
-        return result;
+        return builder.build();
     }
+
 
     // ==========================================================================
     // 8️. GET POST BY ID
@@ -324,7 +325,7 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
         log.debug("toGrpcPost - mapping post id: {}", post != null ? post.getId() : null);
 
         PostMessage.Builder builder = PostMessage.newBuilder()
-                .setId(post != null ? post.getId().toString() : null)
+                .setId(post.getId().toString())
                 .setUserId(post.getUserId().toString())
                 .setContent(Optional.ofNullable(post.getContent()).orElse(""))
                 .setUserName(Optional.ofNullable(post.getUserName()).orElse(""))
@@ -351,12 +352,12 @@ public class PostServiceImpl extends PostServiceGrpc.PostServiceImplBase {
             }
         }
 
-        // STATUS MAPPING  (IMPORTANT!)
-        if (post.getStatus() != null) {
-            builder.setStatus(PostStatus.valueOf(post.getStatus().name()));
-        } else {
-            builder.setStatus(PostStatus.POST_STATUS_UNSPECIFIED);
-        }
+        builder.setStatus(
+                com.postservice.PostStatus.valueOf(
+                        post.getStatus().name()
+                )
+        );
+
         PostMessage result = builder.build();
         log.debug("toGrpcPost - mapped post id: {} -> grpc id: {}", post.getId(), result.getId());
         return result;

@@ -1,5 +1,6 @@
 package com.fc.feedservice.dto;
 
+import com.postservice.PostStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
@@ -80,7 +81,8 @@ public class PostDto {
     @Schema(description = "Timestamp when the repost occurred")
     private LocalDateTime repostedAt;
 
-
+    @Schema(description = "post Status (e.g. PENDING, APPROVED, REMOVED) - used for moderation purposes")
+    private PostStatus status;
     // ----------------------------- Nested Original Post -----------------------------
 
     @Schema(description = "Full original post details when this post is a repost")
