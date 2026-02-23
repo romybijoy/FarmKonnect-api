@@ -57,4 +57,15 @@ public class CommentDto {
      */
     @Builder.Default
     private List<CommentDto> replies = new ArrayList<>();
+
+    private boolean edited;
+    private boolean deleted;
+
+    private int likeCount;
+    private boolean likedByCurrentUser;
+    private boolean ownedByCurrentUser;
+
+    private long replyCount;
+
+    private List<ReactionDto> reactions;
 }

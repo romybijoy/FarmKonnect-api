@@ -1,6 +1,8 @@
 package com.fc.postservice.repository;
 
 import com.fc.postservice.model.Comment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -57,5 +59,35 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
                 r -> ((Number) r[1]).longValue()
         ));
     }
+
+    List<Comment> findByPostIdAndParentCommentIsNullOrderByCreatedAtDesc(UUID postId);
+
+    Page<Comment> findByPostIdAndParentCommentIsNull(
+            UUID postId,
+            Pageable pageable
+    );
+
+    @Query("""
+    SELECT COUNT(c)
+    FROM Comment c
+    WHERE c.parentComment.id = :commentId
+""")
+    long countReplies(UUID commentId);
+
+    Page<Comment> findByParentComment_Id(
+            UUID parentId,
+            Pageable pageable
+    );
+
+    @Query("""
+    SELECT c.id, COUNT(r)
+    FROM Comment c
+    LEFT JOIN Comment r ON r.parentComment.id = c.id
+    WHERE c.postId = :postId
+      AND c.parentComment IS NULL
+    GROUP BY c.id
+""")
+    List<Object[]> fetchReplyCounts(UUID postId);
+
 }
 

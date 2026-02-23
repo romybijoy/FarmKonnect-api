@@ -1,14 +1,20 @@
 package com.fc.postservice.client;
 
 import com.fc.postservice.dto.UserDto;
+import com.userproto.UserIdsRequest;
 import com.userproto.UserRequest;
 import com.userproto.UserResponse;
 import com.userproto.UserServiceGrpc;
+import com.userproto.UsersResponse;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * gRPC client for communicating with the Auth Service's UserService.
@@ -53,5 +59,31 @@ public class UserServiceClient {
                 .profileImage(response.getImage())
                 .district(response.getDistrict())
                 .build();
+    }
+
+    public Map<UUID, UserResponse> getUsersByIds(Set<UUID> userIds) {
+
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        UserIdsRequest request = UserIdsRequest.newBuilder()
+                .addAllUserIds(
+                        userIds.stream()
+                                .map(UUID::toString)
+                                .toList()
+                )
+                .build();
+
+        UsersResponse response = userStub.getUsersByIds(request);
+
+        Map<UUID, UserResponse> userMap =
+                response.getUsersList()
+                        .stream()
+                        .collect(Collectors.toMap(
+                                user -> UUID.fromString(user.getUserId()),
+                                user -> user
+                        ));
+        return userMap;
     }
 }

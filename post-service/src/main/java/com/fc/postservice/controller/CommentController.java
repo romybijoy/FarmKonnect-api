@@ -2,15 +2,20 @@ package com.fc.postservice.controller;
 
 import com.fc.postservice.dto.CommentDto;
 import com.fc.postservice.dto.CommentRequest;
+import com.fc.postservice.dto.ReactionRequest;
+import com.fc.postservice.dto.UpdateCommentRequest;
 import com.fc.postservice.model.Comment;
 import com.fc.postservice.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,69 +42,58 @@ public class CommentController {
      * @param request request body containing comment content & userId
      * @return saved Comment entity
      */
-    @Operation(summary = "Add comment", description = "Adds a new comment to the specified post.")
+    @Operation(summary = "Add comment/reply", description = "Adds a new comment/reply to the specified post.")
     @PostMapping
-    public ResponseEntity<Comment> addComment(@PathVariable UUID postId, @RequestBody CommentRequest request) {
+    public ResponseEntity<CommentDto> addComment(
+            @PathVariable UUID postId,
+            @Valid @RequestBody CommentRequest request,
+            Principal principal
+    ) {
+        UUID userId = UUID.fromString(principal.getName());
 
-        log.debug("Request to add comment for postId={} by userId={}", postId, request.getUserId());
-        try {
-            Comment saved = commentService.addComment(postId, request);
-            log.info("Comment added successfully for postId={} commentId={}", postId, saved.getId());
-            return ResponseEntity.ok(saved);
-        }
-        catch (Exception e) {
-            log.error("Failed to add comment for postId={} userId={} : {}",
-                    postId, request.getUserId(), e.getMessage(), e);
-            throw e;
-        }
+        CommentDto saved =
+                commentService.addComment(postId, userId, request);
+
+        return ResponseEntity.ok(saved);
+
     }
-
-    /**
-     * Adds a reply under an existing parent comment.
-     *
-     * @param postId    ID of the post
-     * @param parentId  ID of the parent comment
-     * @param userId    ID of the replying user (query param)
-     * @param content   text content of the reply
-     * @return saved reply Comment entity
-     */
-    @Operation(summary = "Add reply", description = "Adds a reply to a specific parent comment.")
-    @PostMapping("/{parentId}/reply")
-    public Comment addReply(@PathVariable UUID postId,
-                            @PathVariable UUID parentId,
-                            @RequestParam UUID userId,
-                            @RequestBody String content) {
-
-        log.debug("Request to add reply for postId={}, parentId={}, userId={}",
-                postId, parentId, userId);
-
-        try {
-            Comment reply = commentService.addReply(postId, userId, parentId, content);
-
-            log.info("Reply added: replyId={} for postId={} parentId={}",
-                    reply.getId(), postId, parentId);
-
-            return reply;
-        } catch (Exception e) {
-            log.error("Failed to add reply for postId={} parentId={} userId={} : {}",
-                    postId, parentId, userId, e.getMessage(), e);
-            throw e;
-        }
-    }
-
     /**
      * Retrieves all comments for a post, including nested replies.
      *
      * @param postId ID of the post
      * @return List of CommentDto (comments + replies)
      */
-    @Operation(summary = "Get comments", description = "Fetches all comments for a post, including replies.")
     @GetMapping
-    public ResponseEntity<List<CommentDto>> getComments(@PathVariable UUID postId) {
-        log.debug("Fetching comments for postId={}", postId);
-        List<CommentDto> result = commentService.getCommentsWithReplies(postId);
-        log.info("Fetched {} comments for postId={}", result.size(), postId);
+    public ResponseEntity<Page<CommentDto>> getComments(
+            @PathVariable UUID postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal
+    ) {
+
+        UUID userId = UUID.fromString(principal.getName());
+
+        Page<CommentDto> result =
+                commentService.getComments(postId, userId, page, size);
+
         return ResponseEntity.ok(result);
+    }
+
+
+    @GetMapping("/{commentId}/replies")
+    public ResponseEntity<Page<CommentDto>> getReplies(
+            @PathVariable UUID commentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            Principal principal
+    ) {
+
+        UUID userId = UUID.fromString(principal.getName());
+        log.info("Principal object: {}", principal);
+        Page<CommentDto> replies =
+                commentService.getReplies(commentId, userId, page, size);
+
+        return ResponseEntity.ok(replies);
     }
 
     /**
@@ -121,5 +115,88 @@ public class CommentController {
             log.error("Failed to fetch comment count for postId={} : {}", postId, e.getMessage(), e);
             throw e;
         }
+    }
+
+    /**
+     * ❤️ Toggle like
+     */
+    @Operation(summary = "Toggle like on a comment")
+    @PostMapping("/{commentId}/like")
+    public ResponseEntity<Void> toggleLike(
+            @PathVariable UUID commentId,
+            Principal principal
+    ) {
+        UUID userId = UUID.fromString(principal.getName());
+
+        log.info("User {} toggling like on comment {}", userId, commentId);
+
+        commentService.toggleLike(commentId, userId);
+
+        log.debug("Like toggled successfully for comment {}", commentId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 😀 Toggle reaction
+     */
+    @Operation(summary = "Toggle emoji reaction on a comment")
+    @PostMapping("/{commentId}/reaction")
+    public ResponseEntity<Void> toggleReaction(
+            @PathVariable UUID commentId,
+            @Valid @RequestBody ReactionRequest request,
+            Principal principal
+    ) {
+        UUID userId = UUID.fromString(principal.getName());
+
+        log.info("User {} reacting with '{}' on comment {}",
+                userId, request.getEmoji(), commentId);
+
+        commentService.toggleReaction(commentId, userId, request.getEmoji());
+
+        log.debug("Reaction updated successfully for comment {}", commentId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * ✏ Edit comment
+     */
+    @Operation(summary = "Update a comment")
+    @PutMapping("/{commentId}")
+    public ResponseEntity<Void> updateComment(
+            @PathVariable UUID commentId,
+            @RequestBody UpdateCommentRequest request,
+            Principal principal
+    ) {
+        UUID userId = UUID.fromString(principal.getName());
+
+        log.info("User {} updating comment {}", userId, commentId);
+
+        commentService.updateComment(commentId, userId, request.getContent());
+
+        log.debug("Comment {} updated successfully", commentId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 🗑 Soft delete
+     */
+    @Operation(summary = "Soft delete a comment")
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable UUID commentId,
+            Principal principal
+    ) {
+        UUID userId = UUID.fromString(principal.getName());
+
+        log.warn("User {} deleting comment {}", userId, commentId);
+
+        commentService.deleteComment(commentId, userId);
+
+        log.debug("Comment {} soft deleted", commentId);
+
+        return ResponseEntity.ok().build();
     }
 }

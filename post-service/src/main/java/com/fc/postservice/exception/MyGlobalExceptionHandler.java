@@ -6,7 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.NoSuchElementException;
-
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import java.util.stream.Collectors;
 /**
  * Global exception handler for PostService.
  * This class centralizes exception-to-response mappings and ensures that
@@ -44,5 +45,18 @@ public class MyGlobalExceptionHandler {
             log.debug("Stack trace:", ex);
         }
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    //Handle validation errors and return a user-friendly message
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidationErrors(MethodArgumentNotValidException ex) {
+
+        String errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
+        return ResponseEntity.badRequest().body(errors);
     }
 }

@@ -1,15 +1,18 @@
 package com.fc.authservice.grpc;
 import com.fc.authservice.model.User;
 import com.fc.authservice.repository.UserRepository;
+import com.userproto.UserIdsRequest;
 import com.userproto.UserRequest;
 import com.userproto.UserResponse;
 import com.userproto.UserServiceGrpc.UserServiceImplBase;
+import com.userproto.UsersResponse;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -76,6 +79,58 @@ public class UserServiceImpl extends UserServiceImplBase {
                     .withDescription("Internal error: " + e.getMessage())
                     .withCause(e)
                     .asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getUsersByIds(UserIdsRequest request,
+                              StreamObserver<UsersResponse> responseObserver) {
+
+        log.info("Received batch user request. count={}",
+                request.getUserIdsCount());
+
+        try {
+
+            // Convert string IDs → UUID
+            List<UUID> ids = request.getUserIdsList()
+                    .stream()
+                    .map(UUID::fromString)
+                    .toList();
+
+            // Fetch all users in single DB query
+            List<User> users = userRepository.findAllById(ids);
+
+            // Convert to gRPC responses
+            List<UserResponse> responses = users.stream()
+                    .map(user -> UserResponse.newBuilder()
+                            .setUserId(user.getId().toString())
+                            .setUserName(user.getUserName() != null ? user.getUserName() : "")
+                            .setImage(user.getImage() != null ? user.getImage() : "")
+                            .setDescription(user.getDescription() != null ? user.getDescription() : "")
+                            .setDistrict(user.getDistrict() != null ? user.getDistrict() : "")
+                            .build()
+                    )
+                    .toList();
+
+            UsersResponse reply = UsersResponse.newBuilder()
+                    .addAllUsers(responses)
+                    .build();
+
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+
+            log.info("Successfully returned {} users", responses.size());
+
+        } catch (Exception e) {
+
+            log.error("Error in batch user fetch", e);
+
+            responseObserver.onError(
+                    io.grpc.Status.INTERNAL
+                            .withDescription("Failed to fetch users")
+                            .withCause(e)
+                            .asRuntimeException()
+            );
         }
     }
 

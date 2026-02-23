@@ -6,16 +6,25 @@ option java_outer_classname = "UserProto";
 
 service UserService {
   rpc GetUserById (UserRequest) returns (UserResponse);
+  rpc GetUsersByIds (UserIdsRequest) returns (UsersResponse);
+
 }
 
 message UserRequest {
   string userId = 1;
 }
 
+message UserIdsRequest {
+  repeated string userIds = 1;
+}
 message UserResponse {
   string userId = 1;
   string userName = 2;
   string image = 3;
   string district = 4;
   string description = 5;
+}
+
+message UsersResponse {
+  repeated UserResponse users = 1;
 }

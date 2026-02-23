@@ -43,4 +43,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     
     List<Post> findByStatus(PostStatus status);
 
+    @Query("SELECT p.userId FROM Post p WHERE p.id = :postId")
+    UUID findOwnerIdByPostId(@Param("postId") UUID postId);
+
 }

@@ -18,7 +18,15 @@ import java.util.UUID;
  * Cascade and orphanRemoval ensure comment trees remain consistent.
  */
 @Entity
-@Table(name = "comments")
+@Table(
+        name = "comments",
+        indexes = {
+                @Index(name = "idx_comment_post", columnList = "postId"),
+                @Index(name = "idx_comment_parent", columnList = "parent_id"),
+                @Index(name = "idx_comment_user", columnList = "userId"),
+                @Index(name = "idx_comment_created", columnList = "createdAt")
+        }
+)
 @Data
 public class Comment {
 
@@ -39,6 +47,14 @@ public class Comment {
     @Column(nullable = false, length = 500)
     private String content;
 
+    // Like count (denormalized for fast reads)
+    private int likeCount = 0;
+
+    // Edited flag
+    private boolean edited = false;
+
+    // Soft delete
+    private boolean deleted = false;
     /**
      * Parent comment reference (self-referencing ManyToOne).
      * If null → this is a top-level comment.
@@ -57,7 +73,18 @@ public class Comment {
     @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> replies = new ArrayList<>();
 
+    // Emoji reactions
+    @OneToMany(mappedBy = "comment",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<CommentReaction> reactions = new ArrayList<>();
+
     /** Timestamp when the comment was created */
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    private LocalDateTime updatedAt;
+
+    @Version
+    private Long version;
 }
 
