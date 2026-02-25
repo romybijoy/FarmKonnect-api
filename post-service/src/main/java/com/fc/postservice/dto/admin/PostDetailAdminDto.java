@@ -1,5 +1,6 @@
 package com.fc.postservice.dto.admin;
 
+import com.fc.postservice.enums.PostStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,7 +28,7 @@ import java.util.UUID;
 public class PostDetailAdminDto {
 
     /** Unique ID of the post */
-    private UUID id;
+    private UUID postId;
 
     /** ID of the user who created the post */
     private UUID userId;
@@ -68,6 +69,8 @@ public class PostDetailAdminDto {
 
     /** ID of the original post (if this is a repost) */
     private UUID originalPostId;
+
+    private PostStatus status;
 
     /** ID of the user who reposted this post */
     private UUID repostedBy;

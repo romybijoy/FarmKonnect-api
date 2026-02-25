@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package com.fc.notification;
+
+option java_multiple_files = true;
+option java_package = "com.fc.notification";
+option java_outer_classname = "ModerationProto";
+
+/*
+ * Event published when a post is moderated by admin.
+ * Consumed by notification-service.
+ */
+message PostModerationEvent {
+
+  string postId = 1;        // ID of the moderated post
+  string ownerId = 2;       // User who owns the post
+  string action = 3;        // REMOVED / RESTORED / etc.
+  string reason = 4;        // Moderator reason
+  string moderatedBy = 5;   // Admin ID
+  int64 timestamp = 6;     // epoch millis
+}
+
+/*
+ * Event published when a report is created.
+ */
+message ReportCreatedEvent {
+  string reportId = 1;
+  string postId = 2;
+  string reporterId = 3;
+  string reason = 4;
+  string details = 5;
+  int64 createdAt = 6;
+}
+
+/*
+ * Event published when a report is reviewed.
+ */
+message ReportReviewedEvent {
+  string reportId = 1;
+  string postId = 2;
+  string status = 3;      // ACTIONED / DISMISSED
+  string reviewedBy = 4;
+  string reason = 5;
+  int64 reviewedAt = 6;
+}
+
+message AppealCreatedEvent {
+  string appealId = 1;
+  string postId = 2;
+  string userId = 3;
+  string reason = 4;
+  int64 createdAt = 5;
+}
+
+message AppealReviewedEvent {
+  string appealId = 1;
+  string postId = 2;
+  string userId = 3;
+  string status = 4; // APPROVED / REJECTED
+  string reviewedBy = 5;
+  int64 reviewedAt = 6;
+}

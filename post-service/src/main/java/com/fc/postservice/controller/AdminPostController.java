@@ -4,12 +4,17 @@ import com.fc.postservice.dto.ReportDto;
 import com.fc.postservice.dto.ReviewRequest;
 import com.fc.postservice.dto.admin.PostDetailAdminDto;
 import com.fc.postservice.dto.admin.PostResponse;
+import com.fc.postservice.enums.AppealStatus;
 import com.fc.postservice.enums.ReportStatus;
+import com.fc.postservice.model.Appeal;
 import com.fc.postservice.model.Report;
 import com.fc.postservice.service.AdminPostService;
+import com.fc.postservice.service.AppealService;
 import com.fc.postservice.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.Page;
@@ -36,16 +41,19 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/admin/posts")
+@Slf4j
 @Tag(name = "Admin Post Management", description = "Admin-only APIs for managing posts and reports")
 public class AdminPostController {
 
     private final AdminPostService adminPostService;
     private final ReportService reportService;
+    private final AppealService appealService;
 
-    public AdminPostController(AdminPostService adminPostService, ReportService reportService) {
+    public AdminPostController(AdminPostService adminPostService, ReportService reportService, AppealService appealService) {
 
         this.adminPostService = adminPostService;
         this.reportService = reportService;
+        this.appealService = appealService;
     }
 
     /**
@@ -135,5 +143,49 @@ public class AdminPostController {
                 Optional.ofNullable(to),
                 pageable,
                 zone);
+    }
+
+    // ------------------------------------------------------------
+    // ADMIN → REVIEW APPEAL
+    // ------------------------------------------------------------
+    @PutMapping("/appeals/{appealId}/review")
+    @Operation(
+            summary = "Review Appeal",
+            description = "Admin approves or rejects an appeal"
+    )
+    @ApiResponse(responseCode = "200", description = "Appeal reviewed successfully")
+    public ResponseEntity<String> reviewAppeal(
+            @PathVariable UUID appealId,
+            @RequestParam UUID adminId,
+            @RequestParam String action
+    ) {
+
+        log.info("API: Review Appeal | appealId={}, adminId={}, action={}",
+                appealId, adminId, action);
+
+        appealService.reviewAppeal(appealId, adminId, action);
+
+        return ResponseEntity.ok("Appeal reviewed successfully");
+    }
+
+    // ------------------------------------------------------------
+    // ADMIN → GET PENDING APPEALS
+    // ------------------------------------------------------------
+    @GetMapping("/appeals")
+    public ResponseEntity<Page<Appeal>> getAppeals(
+            @RequestParam(required = false) AppealStatus status,
+            Pageable pageable) {
+
+        log.info("API: Fetch Appeals | status={}", status);
+
+        Page<Appeal> appeals;
+
+        if (status != null) {
+            appeals = appealService.getAppealsByStatus(status, pageable);
+        } else {
+            appeals = appealService.getAllAppeals(pageable);
+        }
+
+        return ResponseEntity.ok(appeals);
     }
 }

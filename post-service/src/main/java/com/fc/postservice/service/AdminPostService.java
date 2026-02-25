@@ -129,6 +129,7 @@ public class AdminPostService {
                     .createdAt(p.getCreatedAt())
                     .isRepost(p.isRepost())
                     .originalPostId(p.getOriginalPostId())
+                    .status(p.getStatus())
                     .commentCount(commentCount)
                     .saveCount(saveCount)
                     .likeCount(likeCount)
@@ -156,7 +157,7 @@ public class AdminPostService {
                 .getOrDefault(postId, 0L);
 
         PostDetailAdminDto dto = new PostDetailAdminDto();
-        dto.setId(p.getId());
+        dto.setPostId(p.getId());
         dto.setUserId(p.getUserId());
         dto.setUserName(p.getUserName());
         dto.setContent(p.getContent());
@@ -165,6 +166,7 @@ public class AdminPostService {
         dto.setDescription(p.getDescription());
         dto.setCreatedAt(p.getCreatedAt());
         dto.setRepost(p.isRepost());
+        dto.setStatus(p.getStatus());
         dto.setOriginalPostId(p.getOriginalPostId());
         dto.setCommentCount((int) comments);
         dto.setSaveCount((int) saves);
@@ -174,5 +176,7 @@ public class AdminPostService {
 
         return dto;
     }
+
+
 }
 

@@ -1,11 +1,13 @@
 package com.fc.postservice.service;
 
+import com.fc.notification.PostModerationEvent;
+import com.fc.notification.ReportCreatedEvent;
 import com.fc.postservice.enums.PostStatus;
 import com.fc.postservice.model.Report;
 import com.fc.postservice.enums.ReportStatus;
 import com.fc.postservice.repository.PostRepository;
 import com.fc.postservice.repository.ReportRepository;
-import com.fc.postservice.messaging.KafkaPublisher;
+import com.fc.postservice.kafka.KafkaPublisher;
 import com.fc.postservice.specification.ReportSpecification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -57,16 +59,22 @@ public class ReportService {
         r.setStatus(ReportStatus.PENDING);
         r = reportRepository.save(r);
 
-        // publish reports.created for admins/notification service
-        kafkaPublisher.publish("reports.created", Map.of(
-                "reportId", r.getId(),
-                "postId", r.getPostId(),
-                "reason", r.getReason(),
-                "reporterId", r.getReporterId(),
-                "createdAt", r.getCreatedAt().toString()
-        ));
+        // Build Protobuf Event
+        ReportCreatedEvent event = ReportCreatedEvent.newBuilder()
+                .setReportId(r.getId().toString())
+                .setPostId(r.getPostId().toString())
+                .setReporterId(r.getReporterId().toString())
+                .setReason(r.getReason())
+                .setDetails(r.getDetails() != null ? r.getDetails() : "")
+                .setCreatedAt(r.getCreatedAt().toEpochMilli())
+                .build();
 
-        log.info("Report created successfully | reportId={}, postId={}", r.getId(), r.getPostId());
+        // Publish as byte[]
+        kafkaPublisher.publish("reports.created", event.toByteArray());
+
+        log.info("ReportCreatedEvent published | reportId={}, postId={}",
+                r.getId(), r.getPostId());
+
         return r;
     }
 
@@ -89,32 +97,27 @@ public class ReportService {
             throw new IllegalStateException("Report already reviewed");
         }
 
+        UUID ownerId = postRepository.findOwnerIdByPostId(r.getPostId());
+
+        String moderationAction;
+
         if ("REMOVE_POST".equalsIgnoreCase(action)) {
-            // soft delete / flag the post
+
             postRepository.updateStatus(r.getPostId(), PostStatus.REMOVED, adminId, actionReason);
             r.setStatus(ReportStatus.ACTIONED);
 
-            // audit & kafka
+            moderationAction = "REMOVED";
+
             auditService.record(r.getId(), r.getPostId(), adminId, "REMOVE_POST", actionReason);
 
-            kafkaPublisher.publish("posts.moderated", Map.of(
-                    "postId", r.getPostId(),
-                    "action", "REMOVED",
-                    "reason", actionReason,
-                    "moderatedBy", adminId.toString(),
-                    "timestamp", Instant.now().toString()
-            ));
         } else if ("DISMISS".equalsIgnoreCase(action) || "REJECT".equalsIgnoreCase(action)) {
+
             r.setStatus(ReportStatus.DISMISSED);
+
+            moderationAction = "DISMISSED";
+
             auditService.record(r.getId(), r.getPostId(), adminId, "DISMISS_REPORT", actionReason);
 
-            kafkaPublisher.publish("reports.reviewed", Map.of(
-                    "reportId", r.getId(),
-                    "status", "DISMISSED",
-                    "reviewedBy", adminId,
-                    "reason", actionReason,
-                    "timestamp", Instant.now().toString()
-            ));
         } else {
             throw new IllegalArgumentException("Unknown action: " + action);
         }
@@ -123,14 +126,20 @@ public class ReportService {
         r.setReviewedAt(Instant.now());
         reportRepository.save(r);
 
-        // publish a reports.reviewed event for notification / admin UIs
-        kafkaPublisher.publish("reports.reviewed", Map.of(
-                "reportId", r.getId(),
-                "postId", r.getPostId(),
-                "status", r.getStatus().name(),
-                "reviewedBy", adminId.toString(),
-                "reviewedAt", r.getReviewedAt().toString()
-        ));
+        // Publish Protobuf moderation event
+        PostModerationEvent event = PostModerationEvent.newBuilder()
+                .setPostId(r.getPostId().toString())
+                .setOwnerId(ownerId.toString())
+                .setAction(moderationAction)
+                .setReason(actionReason != null ? actionReason : "")
+                .setModeratedBy(adminId.toString())
+                .setTimestamp(Instant.now().toEpochMilli()) // long type for timestamp
+                .build();
+
+        kafkaPublisher.publish("posts.moderated", event.toByteArray());
+
+        log.info("PostModerationEvent published | postId={}, ownerId={}",
+                r.getPostId(), ownerId);
 
         return r;
     }

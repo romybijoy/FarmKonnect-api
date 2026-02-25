@@ -1,5 +1,6 @@
 package com.fc.postservice.dto.admin;
 
+import com.fc.postservice.enums.PostStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,6 +36,8 @@ public class AdminPostDto {
 
     /** Shortened preview of the post text */
     private String contentPreview;
+
+    private PostStatus status;
 
     /** List of image URLs attached to the post */
     private List<String> postImages;
