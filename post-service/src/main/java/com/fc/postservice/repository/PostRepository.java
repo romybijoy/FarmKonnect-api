@@ -2,6 +2,7 @@ package com.fc.postservice.repository;
 
 import com.fc.postservice.enums.PostStatus;
 import com.fc.postservice.model.Post;
+import com.fc.postservice.projection.TopPostProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -45,5 +46,24 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 
     @Query("SELECT p.userId FROM Post p WHERE p.id = :postId")
     UUID findOwnerIdByPostId(@Param("postId") UUID postId);
+
+
+    @Query("""
+        SELECT p.id as postId,
+               p.userName as userName,
+               COUNT(DISTINCT l.id) as likes,
+               COUNT(DISTINCT c.id) as comments,
+               COUNT(DISTINCT s.id) as saves
+        FROM Post p
+        LEFT JOIN Like l ON l.post.id = p.id
+        LEFT JOIN Comment c ON c.postId = p.id
+        LEFT JOIN Save s ON s.post.id = p.id
+        GROUP BY p.id, p.userName
+        ORDER BY 
+            (COUNT(DISTINCT l.id) +
+             COUNT(DISTINCT c.id) +
+             COUNT(DISTINCT s.id)) DESC
+    """)
+    List<TopPostProjection> findTopPosts(Pageable pageable);
 
 }

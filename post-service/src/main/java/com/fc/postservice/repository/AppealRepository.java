@@ -2,6 +2,7 @@ package com.fc.postservice.repository;
 
 
 import com.fc.postservice.enums.AppealStatus;
+import com.fc.postservice.enums.ReportStatus;
 import com.fc.postservice.model.Appeal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,4 +27,6 @@ public interface AppealRepository extends JpaRepository<Appeal, UUID> {
     Page<Appeal> findByUserId(UUID userId, Pageable pageable);
 
     Page<Appeal> findByStatus(AppealStatus status, Pageable pageable);
+
+    long countByStatus(AppealStatus status);
 }

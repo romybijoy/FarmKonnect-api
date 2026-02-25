@@ -4,6 +4,8 @@ import com.fc.postservice.dto.ReportDto;
 import com.fc.postservice.dto.ReviewRequest;
 import com.fc.postservice.dto.admin.PostDetailAdminDto;
 import com.fc.postservice.dto.admin.PostResponse;
+import com.fc.postservice.dto.admin.PostStatsDto;
+import com.fc.postservice.dto.admin.TopPostDto;
 import com.fc.postservice.enums.AppealStatus;
 import com.fc.postservice.enums.ReportStatus;
 import com.fc.postservice.model.Appeal;
@@ -27,10 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Admin controller for managing posts, including:
@@ -188,4 +187,17 @@ public class AdminPostController {
 
         return ResponseEntity.ok(appeals);
     }
+
+    @GetMapping("/top-posts")
+    public ResponseEntity<List<TopPostDto>> getTopPosts(
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return ResponseEntity.ok(adminPostService.getTopPosts(limit));
+    }
+
+    @GetMapping("/post-stats")
+    public ResponseEntity<PostStatsDto> getPostStats() {
+        return ResponseEntity.ok(adminPostService.getPostStats());
+    }
+
 }

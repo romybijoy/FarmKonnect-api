@@ -1,14 +1,11 @@
 package com.fc.postservice.service;
 
-import com.fc.postservice.dto.admin.AdminPostDto;
-import com.fc.postservice.dto.admin.PostDetailAdminDto;
-import com.fc.postservice.dto.admin.PostResponse;
+import com.fc.postservice.dto.admin.*;
+import com.fc.postservice.enums.AppealStatus;
+import com.fc.postservice.enums.ReportStatus;
 import com.fc.postservice.exception.APIException;
 import com.fc.postservice.model.Post;
-import com.fc.postservice.repository.CommentRepository;
-import com.fc.postservice.repository.PostLikeRepository;
-import com.fc.postservice.repository.PostRepository;
-import com.fc.postservice.repository.SavedPostRepository;
+import com.fc.postservice.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,15 +28,19 @@ public class AdminPostService {
     private final CommentRepository commentRepository;
     private final PostLikeRepository likeRepository;
     private final SavedPostRepository saveRepository;
+    private final ReportRepository reportRepository;
+    private final AppealRepository appealRepository;
 
     public AdminPostService(PostRepository postRepository,
                             CommentRepository commentRepository,
                             PostLikeRepository likeRepository,
-                            SavedPostRepository saveRepository) {
+                            SavedPostRepository saveRepository, ReportRepository reportRepository, AppealRepository appealRepository) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.likeRepository = likeRepository;
         this.saveRepository = saveRepository;
+        this.reportRepository = reportRepository;
+        this.appealRepository = appealRepository;
     }
 
     /**
@@ -175,6 +176,40 @@ public class AdminPostService {
         log.info("Post detail fetched successfully for postId={}", postId);
 
         return dto;
+    }
+
+    public List<TopPostDto> getTopPosts(int limit) {
+
+        Pageable pageable = PageRequest.of(0, limit);
+
+        return postRepository.findTopPosts(pageable)
+                .stream()
+                .map(p -> new TopPostDto(
+                        p.getPostId(),
+                        p.getUserName(),
+                        p.getLikes(),
+                        p.getComments(),
+                        p.getSaves()
+                ))
+                .toList();
+    }
+
+
+    public PostStatsDto getPostStats() {
+
+        Long totalPosts = postRepository.count();
+
+        Long pendingReports =
+                reportRepository.countByStatus(ReportStatus.PENDING);
+
+        Long pendingAppeals =
+                appealRepository.countByStatus(AppealStatus.PENDING);
+
+        return new PostStatsDto(
+                totalPosts,
+                pendingReports,
+                pendingAppeals
+        );
     }
 
 

@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -133,6 +134,9 @@ public class UserService {
             response.setToken(token);
             return response;
         }
+
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
 
         response.setStatusCode(200);
         response.setToken(token);
@@ -814,5 +818,39 @@ public class UserService {
                 .followingCount((int) followingCount)
                 .isFollowing(isFollowing)
                 .build();
+    }
+
+    public List<RecentUserDto> getRecentUsers(int limit) {
+
+        Pageable pageable = PageRequest.of(
+                0,
+                limit,
+                Sort.by("createdAt").descending()
+        );
+
+        return userRepository.findAll(pageable)
+                .stream()
+                .map(user -> new RecentUserDto(
+                        user.getId(),
+                        user.getUserName(),
+                        user.getEmail(),
+                        user.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    public UserStatsDto getUserStats() {
+
+        Long totalUsers = userRepository.count();
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+
+        Long activeToday =
+                userRepository.countByLastLoginAtAfter(startOfDay);
+
+        return new UserStatsDto(
+                totalUsers,
+                activeToday
+        );
     }
 }

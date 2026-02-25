@@ -85,4 +85,8 @@ public class User {
     /** Flag to indicate whether user registered using social login */
     private boolean socialUser;
 
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+
 }
