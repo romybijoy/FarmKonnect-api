@@ -4,39 +4,27 @@ spring:
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
-    hibernate:
-      ddl-auto: update
     show-sql: false          # prod default; dev will override
     properties:
       hibernate:
         format_sql: false
 
   kafka:
-    bootstrap-servers: localhost:9092   # will be overridden in prod
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
       acks: all
       retries: 3
-    consumer:
-      group-id: post-service-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      auto-offset-reset: earliest
 
 server:
   port: 4050
 
+jwt:
+  secret: DnFG/tvGjFAfDRZvu2+qZbEQ+SSjLRsNhoXOrtYkTfw=
+
 logging:
   level:
     root: INFO
-    org:
-      hibernate:
-        SQL: DEBUG
-        type:
-          descriptor:
-            sql:
-              BasicBinder: ERROR
     org.springframework.kafka: INFO
 
 grpc:
@@ -49,10 +37,6 @@ grpc:
       enable-keep-alive: true
       default-load-balancing-policy: round_robin
 
-    ai-service:
-      address: static://localhost:50051
-      negotiation-type: plaintext
-      enable-keep-alive: true
 resilience4j:
   circuitbreaker:
     instances:

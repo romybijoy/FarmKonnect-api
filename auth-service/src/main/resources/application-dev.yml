@@ -18,7 +18,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: romybijoy@gmail.com
-    password: awjhmqsrqpprfpih
+    password: vawmcfnritaznvdj
 
 
   kafka:

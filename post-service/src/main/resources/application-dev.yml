@@ -7,6 +7,11 @@ spring:
 
   jpa:
     show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
 
   kafka:
     bootstrap-servers: localhost:9092
@@ -20,3 +25,10 @@ eureka:
   instance:
     prefer-ip-address: false
     hostname: localhost
+
+grpc:
+  client:
+    ai-service:
+      address: static://localhost:50051
+      negotiation-type: plaintext
+      enable-keep-alive: true
