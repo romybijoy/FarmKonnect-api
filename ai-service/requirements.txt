@@ -1,9 +1,7 @@
-fastapi
-uvicorn
-torch
-transformers
 grpcio
 grpcio-tools
-pydantic
-requests
+transformers
+torch
 Pillow
+requests
+protobuf
