@@ -19,9 +19,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -576,63 +578,68 @@ public class UserService {
      * Verifies the account using OTP for either normal registration or email update.
      */
     public UsersDTO verifyAccount(String currentEmail, String otp, boolean isUpdateEmail, String newEmail) {
-        log.info("Account verification requested | currentEmail={} isUpdateEmail={}", currentEmail, isUpdateEmail);
 
-        UsersDTO usersDTO = new UsersDTO();
+        log.info("Account verification requested | currentEmail={} isUpdateEmail={}", currentEmail, isUpdateEmail);
 
         User user = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> {
                     log.error("User not found for OTP verification. email={}", currentEmail);
-                    return new RuntimeException(USER_NOT_FOUND_EMAIL + currentEmail);
+                    return new RuntimeException("User not found with email: " + currentEmail);
                 });
 
-        if (!otp.equals(user.getOtp())
-                || Duration.between(user.getOtpGeneratedTime(), LocalDateTime.now()).toMinutes() > 5) {
-
-            log.warn("Invalid or expired OTP for email={}", currentEmail);
-            usersDTO.setStatusCode(500);
-            usersDTO.setMessage("Invalid or expired OTP. Please regenerate and try again.");
-            return usersDTO;
+        // OTP validation
+        if (!otp.equals(user.getOtp())) {
+            log.warn("Invalid OTP for email={}", currentEmail);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid OTP");
         }
 
+        if (Duration.between(user.getOtpGeneratedTime(), LocalDateTime.now()).toMinutes() > 5) {
+            log.warn("Expired OTP for email={}", currentEmail);
+            throw new RuntimeException("OTP expired. Please regenerate.");
+        }
+
+        // Email update flow
         if (isUpdateEmail) {
+
             if (userRepository.findByEmail(newEmail).isPresent()) {
                 log.warn("Email already in use while updating. newEmail={}", newEmail);
-                usersDTO.setStatusCode(409);
-                usersDTO.setMessage("Email already in use by another user.");
-                return usersDTO;
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
             }
-            usersDTO.setStatusCode(200);
-            usersDTO.setMessage("Email varified successfully.");
+
             log.info("Email verification successful for email update. currentEmail={} newEmail={}",
                     currentEmail, newEmail);
-        } else {
-            user.setEnabled(true);
-            userRepository.save(user);
-            usersDTO.setStatusCode(200);
-            usersDTO.setMessage("OTP verified. You can login.");
-            log.info("Account verification successful for email={}", currentEmail);
+
+            UsersDTO response = new UsersDTO();
+            response.setStatusCode(200);
+            response.setMessage("Email verified successfully");
+            return response;
         }
 
-        return usersDTO;
-    }
+        // Normal verification flow
+        user.setEnabled(true);
+        userRepository.save(user);
 
+        log.info("Account verification successful for email={}", currentEmail);
+
+        UsersDTO response = new UsersDTO();
+        response.setStatusCode(200);
+        response.setMessage("OTP verified. You can login.");
+        return response;
+    }
     /**
      * Regenerates OTP for registration or email update flows.
      */
     public UsersDTO regenerateOtp(String email, boolean isUpdateEmail, String currentEmail) {
+
         log.info("Regenerate OTP requested | email={} isUpdateEmail={} currentEmail={}",
                 email, isUpdateEmail, currentEmail);
 
-        UsersDTO usersDTO = new UsersDTO();
-
+        // Update Email Flow
         if (isUpdateEmail) {
 
             if (userRepository.findByEmail(email).isPresent()) {
                 log.warn("New email already in use during OTP regenerate. newEmail={}", email);
-                usersDTO.setStatusCode(409);
-                usersDTO.setMessage("Email already in use by another user.");
-                return usersDTO;
+                throw new IllegalStateException("Email already in use by another user.");
             }
 
             User user = userRepository.findByEmail(currentEmail)
@@ -648,46 +655,44 @@ public class UserService {
                 log.info("OTP sent to new email={}", email);
             } catch (MessagingException e) {
                 log.error("Failed to send OTP to new email={}", email, e);
-                usersDTO.setStatusCode(500);
-                usersDTO.setMessage("Unable to send OTP to new email. Please try again.");
-                return usersDTO;
+                throw new RuntimeException("Unable to send OTP to new email. Please try again.");
             }
 
             user.setOtp(otp);
             user.setOtpGeneratedTime(LocalDateTime.now());
             userRepository.save(user);
 
-            usersDTO.setStatusCode(200);
-            usersDTO.setMessage("OTP sent to new email. Please verify within 5 minutes.");
-            return usersDTO;
-
-        } else {
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> {
-                        log.error("User not found for OTP regenerate. email={}", email);
-                        return new RuntimeException(USER_NOT_FOUND_EMAIL + email);
-                    });
-
-            String otp = otpUtil.generateOtp();
-
-            try {
-                emailUtil.sendOtpEmail(email, otp);
-                log.info("OTP sent to email={}", email);
-            } catch (MessagingException e) {
-                log.error("Failed to send OTP to email={}", email, e);
-                usersDTO.setStatusCode(500);
-                usersDTO.setMessage("Unable to send OTP. Please try again.");
-                return usersDTO;
-            }
-
-            user.setOtp(otp);
-            user.setOtpGeneratedTime(LocalDateTime.now());
-            userRepository.save(user);
-
-            usersDTO.setStatusCode(200);
-            usersDTO.setMessage("OTP sent to your email. Please verify within 5 minutes.");
-            return usersDTO;
+            UsersDTO response = new UsersDTO();
+            response.setStatusCode(200);
+            response.setMessage("OTP sent to new email. Please verify within 5 minutes.");
+            return response;
         }
+
+        // Normal OTP Flow
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.error("User not found for OTP regenerate. email={}", email);
+                    return new RuntimeException(USER_NOT_FOUND_EMAIL + email);
+                });
+
+        String otp = otpUtil.generateOtp();
+
+        try {
+            emailUtil.sendOtpEmail(email, otp);
+            log.info("OTP sent to email={}", email);
+        } catch (MessagingException e) {
+            log.error("Failed to send OTP to email={}", email, e);
+            throw new RuntimeException("Unable to send OTP. Please try again.");
+        }
+
+        user.setOtp(otp);
+        user.setOtpGeneratedTime(LocalDateTime.now());
+        userRepository.save(user);
+
+        UsersDTO response = new UsersDTO();
+        response.setStatusCode(200);
+        response.setMessage("OTP sent to your email. Please verify within 5 minutes.");
+        return response;
     }
 
     /**
